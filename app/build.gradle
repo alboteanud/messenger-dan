@@ -1,15 +1,24 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'androidx.navigation.safeargs'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'org.jetbrains.kotlin.android.extensions'
 
 android {
+    testBuildType "release"
     compileSdkVersion 28
     defaultConfig {
-        applicationId 'com.craiovadata.android.messenger'
+        applicationId 'com.google.firebase.example.fireeats'
         minSdkVersion 23
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
+
+        vectorDrawables.useSupportLibrary true
+
+        lintOptions {
+            disable 'InvalidPackage'
+        }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -18,32 +27,54 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-        debug {
-            minifyEnabled false
-            testCoverageEnabled false
-        }
     }
-    dataBinding {
-        enabled = true
-    }
+
     productFlavors {
     }
+}
 
-    lintOptions {
-        abortOnError false
-    }
-
+androidExtensions {
+    experimental = true
 }
 
 dependencies {
-    // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$rootProject.kotlinVersion"
-    implementation 'com.google.android.material:material:' + rootProject.supportVersion
-    implementation 'androidx.appcompat:appcompat:' + rootProject.supportVersion
-    implementation 'androidx.cardview:cardview:' + rootProject.supportVersion
-    implementation 'androidx.recyclerview:recyclerview:' + rootProject.supportVersion
-    implementation 'androidx.constraintlayout:constraintlayout:' + rootProject.constraintLayoutVersion
-    // Navigation
-    implementation 'android.arch.navigation:navigation-fragment-ktx:' + rootProject.navigationVersion
-    implementation 'android.arch.navigation:navigation-ui-ktx:' + rootProject.navigationVersion
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.10'
+    // Firestore
+    implementation 'com.google.firebase:firebase-core:16.0.5'
+    implementation 'com.google.firebase:firebase-firestore:17.1.3'
+    // Other Firebase/Play services deps
+    implementation 'com.google.firebase:firebase-auth:16.0.5'
+    implementation 'com.google.android.gms:play-services-auth:16.0.1'
+    // FirebaseUI (for authentication)
+    implementation 'com.firebaseui:firebase-ui-auth:4.2.1'
+    // ButterKnife (for sample code brevity)
+    implementation 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    // Support Libs
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.vectordrawable:vectordrawable-animated:1.0.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.browser:browser:1.0.0'
+    implementation 'com.google.android.material:material:1.1.0-alpha01'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.media:media:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'androidx.multidex:multidex:2.0.0'
+    // Android architecture components
+    implementation 'androidx.lifecycle:lifecycle-runtime:2.0.0'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.0.0'
+    annotationProcessor 'androidx.lifecycle:lifecycle-compiler:2.0.0'
+    // Third-party libraries
+    implementation 'me.zhanghai.android.materialratingbar:library:1.3.1'
+    implementation 'com.github.bumptech.glide:glide:3.7.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1-alpha01'
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.1.1-alpha01'
+    androidTestImplementation 'androidx.test:rules:1.1.1-alpha01'
+    androidTestImplementation 'androidx.test:runner:1.1.1-alpha01'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.2.0'
+    androidTestImplementation 'junit:junit:4.12'
+    androidTestImplementation 'org.hamcrest:hamcrest-library:1.3'
+    androidTestImplementation 'com.google.firebase:firebase-auth:16.0.5'
 }
+
+apply plugin: 'com.google.gms.google-services'

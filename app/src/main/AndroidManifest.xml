@@ -11,29 +11,21 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name="com.craiovadata.android.messenger.MainActivity">
+
+
+
+        <activity android:name="com.craiovadata.android.messenger.MainActivity"
+            android:theme="@style/AppTheme.Activity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- TODO STEP 12.2 -->
-            <nav-graph android:value="@navigation/mobile_navigation" />
-            <!-- TODO END STEP 12.2-->
-
         </activity>
 
-        <receiver android:name="com.craiovadata.android.messenger.DeepLinkAppWidgetProvider">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
+        <activity android:name=".RestaurantDetailActivity"
+            android:theme="@style/AppTheme.Activity"/>
 
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/deep_link_appwidget_info" />
-        </receiver>
 
     </application>
 
