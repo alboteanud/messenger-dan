@@ -7,5 +7,6 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 data class User(
         var email: String = "",
         var name: String = "",
-        var photoUrl: String = ""
+        var photoUrl: String = "",
+        var keywords: MutableList<String> = mutableListOf()
 )

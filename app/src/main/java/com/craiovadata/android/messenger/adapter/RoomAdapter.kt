@@ -50,7 +50,7 @@ open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListene
 //                    .into(itemView.restaurantItemImage)
 
 
-            itemView.restaurantItemName.text = room.participants
+            itemView.restaurantItemName.text = room.participants.toString()
             itemView.restaurantItemCategory.text = room.lastMsg
             itemView.restaurantItemCity.text = room.author
 

@@ -25,11 +25,7 @@
         </activity>
 
         <activity
-            android:name=".RestaurantDetailActivity"
-            android:theme="@style/AppTheme.Activity" />
-
-        <activity
-            android:name=".ConversationDetailActivity"
+            android:name=".MessagesActivity"
             android:theme="@style/AppTheme.Activity">
 
             <!--<intent-filter>-->

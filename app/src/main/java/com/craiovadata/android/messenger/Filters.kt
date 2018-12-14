@@ -2,8 +2,6 @@ package com.craiovadata.android.messenger
 
 import android.content.Context
 import android.text.TextUtils
-import com.craiovadata.android.messenger.model.Restaurant
-import com.craiovadata.android.messenger.util.RestaurantUtil
 import com.google.firebase.firestore.Query
 
 /**
@@ -61,27 +59,18 @@ class Filters {
         if (price > 0) {
             desc.append(" for ")
             desc.append("<b>")
-            desc.append(RestaurantUtil.getPriceString(price))
             desc.append("</b>")
         }
 
         return desc.toString()
     }
 
-    fun getOrderDescription(context: Context): String {
-        return when (sortBy) {
-            Restaurant.FIELD_PRICE -> context.getString(R.string.sorted_by_price)
-            Restaurant.FIELD_POPULARITY -> context.getString(R.string.sorted_by_popularity)
-            else -> context.getString(R.string.sorted_by_rating)
-        }
-    }
 
     companion object {
 
         val default: Filters
             get() {
                 val filters = Filters()
-                filters.sortBy = Restaurant.FIELD_AVG_RATING
                 filters.sortDirection = Query.Direction.DESCENDING
 
                 return filters

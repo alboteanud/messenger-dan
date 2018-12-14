@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.craiovadata.android.messenger.model.Restaurant
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.dialog_filters.*
 import kotlinx.android.synthetic.main.dialog_filters.view.*
@@ -51,22 +50,6 @@ class FilterDialogFragment : DialogFragment() {
             }
         }
 
-    private val selectedSortBy: String?
-        get() {
-            val selected = spinnerSort.selectedItem as String
-            if (getString(R.string.sort_by_rating) == selected) {
-                return Restaurant.FIELD_AVG_RATING
-            }
-            if (getString(R.string.sort_by_price) == selected) {
-                return Restaurant.FIELD_PRICE
-            }
-            return if (getString(R.string.sort_by_popularity) == selected) {
-                Restaurant.FIELD_POPULARITY
-            } else {
-                null
-            }
-        }
-
     private val sortDirection: Query.Direction
         get() {
             val selected = spinnerSort.selectedItem as String
@@ -90,7 +73,6 @@ class FilterDialogFragment : DialogFragment() {
             filters.category = selectedCategory
             filters.city = selectedCity
             filters.price = selectedPrice
-            filters.sortBy = selectedSortBy
             filters.sortDirection = sortDirection
 
             return filters
@@ -99,6 +81,7 @@ class FilterDialogFragment : DialogFragment() {
     interface FilterListener {
 
         fun onFilter(filters: Filters)
+
     }
 
     override fun onCreateView(

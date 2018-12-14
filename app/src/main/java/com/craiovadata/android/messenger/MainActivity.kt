@@ -2,9 +2,10 @@ package com.craiovadata.android.messenger
 
 import android.app.Activity
 import android.app.SearchManager
-import android.content.ComponentName
 import android.content.Intent
+import android.database.MatrixCursor
 import android.os.Bundle
+import android.provider.BaseColumns
 import android.text.Html
 import android.util.Log
 import android.view.Menu
@@ -14,19 +15,13 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.core.app.ActivityCompat.startActivityForResult
-import androidx.core.content.ContextCompat.startActivity
-import androidx.core.view.MenuItemCompat
 import androidx.cursoradapter.widget.CursorAdapter
 import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.craiovadata.android.messenger.R.id.textCurrentSearch
-import com.craiovadata.android.messenger.R.id.textCurrentSortBy
 import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.model.User
-import com.craiovadata.android.messenger.util.RatingUtil
-import com.craiovadata.android.messenger.util.RestaurantUtil
+import com.craiovadata.android.messenger.util.Util.buildKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -34,12 +29,8 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
-import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.*
 import kotlinx.android.synthetic.main.activity_main.*
-
 
 class MainActivity : AppCompatActivity(),
         FilterDialogFragment.FilterListener,
@@ -52,42 +43,41 @@ class MainActivity : AppCompatActivity(),
     lateinit var adapter: RoomAdapter
 
     private lateinit var viewModel: MainActivityViewModel
-//    val selfUserId: String get() = FirebaseAuth.getInstance().currentUser!!.uid
+
+    private val uid: String
+        get() = FirebaseAuth.getInstance().currentUser!!.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        // View model
+        // for debugging only. User?? = null
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        toolbar.title = firebaseUser?.email
+
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
-        // Enable Firestore logging
         FirebaseFirestore.setLoggingEnabled(true)
-
-        // Firestore
         firestore = FirebaseFirestore.getInstance()
 
+        initRoomAdapter()
 
     }
 
     private fun initRoomAdapter() {
-        val firebaseUser = FirebaseAuth.getInstance().currentUser!!.uid
-        // Get ${LIMIT} restaurants
-        val ref = firestore.collection("users").document(firebaseUser).collection("rooms")
-        query = ref
+        query = firestore.collection("users").document(uid).collection("rooms")
                 .orderBy("msgTimestamp", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
-        // RecyclerView
         adapter = object : RoomAdapter(query, this@MainActivity) {
             override fun onDataChanged() {
                 // Show/hide content if the query returns empty.
                 if (itemCount == 0) {
-                    recyclerRestaurants.visibility = View.GONE
+                    recyclerRooms.visibility = View.GONE
                     viewEmpty.visibility = View.VISIBLE
                 } else {
-                    recyclerRestaurants.visibility = View.VISIBLE
+                    recyclerRooms.visibility = View.VISIBLE
                     viewEmpty.visibility = View.GONE
                 }
             }
@@ -99,20 +89,13 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        recyclerRestaurants.layoutManager = LinearLayoutManager(this)
-        recyclerRestaurants.adapter = adapter
+        recyclerRooms.layoutManager = LinearLayoutManager(this)
+        recyclerRooms.adapter = adapter
 
-        // Filter Dialog
         filterDialog = FilterDialogFragment()
 
         filterBar.setOnClickListener { onFilterClicked() }
         buttonClearFilter.setOnClickListener { onClearFilterClicked() }
-
-        // Apply filters
-        onFilter(viewModel.filters)
-
-        // Start listening for Firestore updates
-        adapter.startListening()
 
     }
 
@@ -124,7 +107,12 @@ class MainActivity : AppCompatActivity(),
             startSignIn()
             return
         }
-        initRoomAdapter()
+
+        // Apply filters
+        onFilter(viewModel.filters)
+
+        // Start listening for Firestore updates
+        adapter.startListening()
 
     }
 
@@ -136,42 +124,62 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+        setSearch(menu.findItem(R.id.action_search))
+        return true
+//        return super.onCreateOptionsMenu(menu)
+    }
 
-        // Get the SearchView and set the searchable configuration
-//        val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
-//        (menu.findItem(R.id.action_search).actionView as SearchView).apply {
-//
-//            val compDetail = ComponentName(this@MainActivity, ConversationDetailActivity::class.java)
-//            // Assumes current activity is the searchable activity
-//            setSearchableInfo(searchManager.getSearchableInfo(componentName))
-//            setIconifiedByDefault(false) // Do not iconify the widget; expand it by default
-//        }
-//
-//        return true
-
-        val searchItem = menu.findItem(R.id.action_search)
-        val searchView = searchItem.actionView as SearchView
-
-
-
+    private fun setSearch(searchItem: MenuItem?) {
+        val searchView = searchItem!!.actionView as SearchView
         val form = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
-        var suggestionAdapter : CursorAdapter = SimpleCursorAdapter(this@MainActivity,
+        val suggestionAdapter: CursorAdapter = SimpleCursorAdapter(this@MainActivity,
                 android.R.layout.simple_list_item_1,
                 null,
                 form,
                 intArrayOf(android.R.id.text1),
                 0);
-//        var  suggestions: List<String> = ArrayList<>();
+        var users: QuerySnapshot? = null
 
         searchView.setSuggestionsAdapter(suggestionAdapter)
-
-        
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextChange(newText: String): Boolean {
                 Log.d(TAG, "text changed: " + newText)
+
+                if (newText.length <= 3) return false
+
+                firestore.collection("users")
+                        .whereArrayContains("keywords", newText.toLowerCase())
+                        .get()
+                        .addOnSuccessListener { documents ->
+                            users = documents
+                            for (document in documents) {
+//                                Log.d(TAG, document.id + " => " + document.data)
+                            }
+                            addSugestions(users!!)
+                        }
+
                 return false
+            }
+
+            private fun addSugestions(users: QuerySnapshot) {
+
+                val columns = arrayOf(
+                        BaseColumns._ID,
+                        SearchManager.SUGGEST_COLUMN_TEXT_1,
+                        SearchManager.SUGGEST_COLUMN_INTENT_DATA
+                )
+
+                val cursor = MatrixCursor(columns)
+                for (i in 0 until users.size()) {
+                    val name = users.elementAt(i)["name"]
+                    val tmp = arrayOf(Integer.toString(i), name, name)
+                    cursor.addRow(tmp)
+
+                }
+
+                suggestionAdapter.swapCursor(cursor)
             }
 
             override fun onQueryTextSubmit(query: String): Boolean {
@@ -181,17 +189,33 @@ class MainActivity : AppCompatActivity(),
 
         })
 
-        return true
+        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
+            override fun onSuggestionClick(position: Int): Boolean {
 
+                val palUserSnap = users?.elementAt(position)
 
-//        return super.onCreateOptionsMenu(menu)
+                searchView.setQuery(palUserSnap?.get("name").toString(), false)
+                searchView.clearFocus()
+                searchItem.collapseActionView()
+
+                val intent = Intent(this@MainActivity, MessagesActivity::class.java)
+                intent.putExtra(MessagesActivity.KEY_ROOM_ID, palUserSnap?.id)
+                startActivity(intent)
+                overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
+
+                return true;
+            }
+
+            override fun onSuggestionSelect(position: Int): Boolean {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+
+        })
+
     }
-
-
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.menu_add_items -> onAddItemsClicked()
             R.id.menu_sign_out -> {
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
@@ -210,7 +234,7 @@ class MainActivity : AppCompatActivity(),
                 // Successfully signed in
                 val firebaseUser = FirebaseAuth.getInstance().currentUser
                 if (firebaseUser != null) {
-                    updateUser(firebaseUser)
+                    writeNewUser(firebaseUser)
                     initRoomAdapter()
                 }
             } else {
@@ -226,8 +250,14 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun updateUser(firebaseUser: FirebaseUser) {
-        val user = User(firebaseUser.email.toString(), firebaseUser.displayName.toString(), firebaseUser.photoUrl.toString())
+    private fun writeNewUser(firebaseUser: FirebaseUser) {
+
+        val email = firebaseUser.email.toString()
+        val displayName = firebaseUser.displayName.toString()
+
+        val keywords = buildKeywords(email, displayName)
+
+        val user = User(email, displayName, firebaseUser.photoUrl.toString(), keywords)
         val uid = firebaseUser.uid
 
         firestore.collection("users").document(uid).set(user)
@@ -246,8 +276,8 @@ class MainActivity : AppCompatActivity(),
 
     override fun onRoomSelected(room: DocumentSnapshot) {
         // Go to the details page for the selected room
-        val intent = Intent(this, ConversationDetailActivity::class.java)
-        intent.putExtra(ConversationDetailActivity.KEY_RESTAURANT_ID, room.reference.id)
+        val intent = Intent(this, MessagesActivity::class.java)
+        intent.putExtra(MessagesActivity.KEY_ROOM_ID, room.reference.id)
 
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
@@ -260,28 +290,6 @@ class MainActivity : AppCompatActivity(),
         val ref = firestore.collection("users").document(firebaseUser).collection("rooms")
         // Construct query basic query
         var query: Query = ref
-/*
-
-        // Category (equality filter)
-        if (filters.hasCategory()) {
-            query = query.whereEqualTo(Restaurant.FIELD_CATEGORY, filters.category)
-        }
-
-        // City (equality filter)
-        if (filters.hasCity()) {
-            query = query.whereEqualTo(Restaurant.FIELD_CITY, filters.city)
-        }
-
-        // Price (equality filter)
-        if (filters.hasPrice()) {
-            query = query.whereEqualTo(Restaurant.FIELD_PRICE, filters.price)
-        }
-
-        // Sort by (orderBy with direction)
-        if (filters.hasSortBy()) {
-            query = query.orderBy(filters.sortBy.toString(), filters.sortDirection)
-        }
-*/
 
         // Limit items
         query = query.limit(LIMIT.toLong())
@@ -291,7 +299,6 @@ class MainActivity : AppCompatActivity(),
 
         // Set header
         textCurrentSearch.text = Html.fromHtml(filters.getSearchDescription(this))
-        textCurrentSortBy.text = filters.getOrderDescription(this)
 
         // Save filters
         viewModel.filters = filters
@@ -316,35 +323,6 @@ class MainActivity : AppCompatActivity(),
 
         startActivityForResult(intent, RC_SIGN_IN)
         viewModel.isSigningIn = true
-    }
-
-    private fun onAddItemsClicked() {
-        // Add a bunch of random restaurants
-        val batch = firestore.batch()
-        for (i in 0..9) {
-            val restRef = firestore.collection("restaurants").document()
-
-            // Create random restaurant / ratings
-            val randomRestaurant = RestaurantUtil.getRandom(this)
-            val randomRatings = RatingUtil.getRandomList(randomRestaurant.numRatings)
-            randomRestaurant.avgRating = RatingUtil.getAverageRating(randomRatings)
-
-            // Add restaurant
-            batch.set(restRef, randomRestaurant)
-
-            // Add ratings to subcollection
-            for (rating in randomRatings) {
-                batch.set(restRef.collection("ratings").document(), rating)
-            }
-        }
-
-        batch.commit().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Log.d(TAG, "Write batch succeeded.")
-            } else {
-                Log.w(TAG, "write batch failed.", task.exception)
-            }
-        }
     }
 
     private fun showSignInErrorDialog(@StringRes message: Int) {

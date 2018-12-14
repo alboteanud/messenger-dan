@@ -7,58 +7,45 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
-import com.craiovadata.android.messenger.model.Rating
-import com.craiovadata.android.messenger.model.Restaurant
 import com.craiovadata.android.messenger.model.Room
-import com.craiovadata.android.messenger.util.RestaurantUtil
 import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
-import com.google.firebase.firestore.EventListener
 import kotlinx.android.synthetic.main.activity_restaurant_detail.*
 
-class ConversationDetailActivity : AppCompatActivity(),
+class MessagesActivity : AppCompatActivity(),
         EventListener<DocumentSnapshot>,
         MessageDialogFragment.MsgListener {
 
     private var messageDialog: MessageDialogFragment? = null
     private lateinit var firestore: FirebaseFirestore
     private lateinit var roomRef: DocumentReference
-    private lateinit var palRoomRef: DocumentReference
     private lateinit var messageAdapter: MessageAdapter
-    private var restaurantRegistration: ListenerRegistration? = null
+    private var listenerRegistration: ListenerRegistration? = null
+    private lateinit var palUid: String
 
-    val selfUserId: String
+    val uid: String
         get() = FirebaseAuth.getInstance().currentUser!!.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_restaurant_detail)
 
-        // Get restaurant ID from extras
-        val palUserId = intent.extras?.getString(KEY_RESTAURANT_ID)
-                ?: throw IllegalArgumentException("Must pass extra $KEY_RESTAURANT_ID")
+        palUid = intent.extras?.getString(KEY_ROOM_ID)
+                ?: throw IllegalArgumentException("Must pass extra $KEY_ROOM_ID")
 
-        // Initialize Firestore
         firestore = FirebaseFirestore.getInstance()
+        roomRef = firestore.collection("users").document(uid).collection("rooms").document(palUid)
 
-
-        // Get reference to the restaurant
-        roomRef = firestore.collection("users").document(selfUserId).collection("rooms").document(palUserId)
-        palRoomRef = firestore.collection("users").document(palUserId).collection("rooms").document(selfUserId)
-
-        // Get ratings
-        val ratingsQuery = roomRef
+        val query = roomRef
                 .collection("messages")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(50)
 
-        // RecyclerView
-        messageAdapter = object : MessageAdapter(ratingsQuery) {
+        messageAdapter = object : MessageAdapter(query) {
             override fun onDataChanged() {
                 if (itemCount == 0) {
                     recyclerRatings.visibility = View.VISIBLE
@@ -82,7 +69,7 @@ class ConversationDetailActivity : AppCompatActivity(),
         super.onStart()
 
         messageAdapter.startListening()
-        restaurantRegistration = roomRef.addSnapshotListener(this)
+        listenerRegistration = roomRef.addSnapshotListener(this)
     }
 
     public override fun onStop() {
@@ -90,8 +77,8 @@ class ConversationDetailActivity : AppCompatActivity(),
 
         messageAdapter.stopListening()
 
-        restaurantRegistration?.remove()
-        restaurantRegistration = null
+        listenerRegistration?.remove()
+        listenerRegistration = null
     }
 
     override fun finish() {
@@ -99,9 +86,6 @@ class ConversationDetailActivity : AppCompatActivity(),
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
 
-    /**
-     * Listener for the Restaurant document ([.roomRef]).
-     */
     override fun onEvent(snapshot: DocumentSnapshot?, e: FirebaseFirestoreException?) {
         if (e != null) {
             Log.w(TAG, "restaurant:onEvent", e)
@@ -109,25 +93,20 @@ class ConversationDetailActivity : AppCompatActivity(),
         }
 
         snapshot?.let {
-            val restaurant = snapshot.toObject(Restaurant::class.java)
-            if (restaurant != null) {
-                onRestaurantLoaded(restaurant)
+            val room = snapshot.toObject(Room::class.java)
+            if (room != null) {
+                onRoomLoaded(room)
             }
         }
     }
 
-    private fun onRestaurantLoaded(restaurant: Restaurant) {
-        restaurantName.text = restaurant.name
-        restaurantRating.rating = restaurant.avgRating.toFloat()
-        restaurantNumRatings.text = getString(R.string.fmt_num_ratings, restaurant.numRatings)
-        restaurantCity.text = restaurant.city
-        restaurantCategory.text = restaurant.category
-        restaurantPrice.text = RestaurantUtil.getPriceString(restaurant)
+    private fun onRoomLoaded(room: Room) {
+        roomName.text = room.participants.toString()
 
         // Background image
-        Glide.with(restaurantImage.context)
-                .load(restaurant.photo)
-                .into(restaurantImage)
+//        Glide.with(restaurantImage.context)
+//                .load(room.photo)
+//                .into(restaurantImage)
     }
 
     private fun onBackArrowClicked() {
@@ -158,39 +137,10 @@ class ConversationDetailActivity : AppCompatActivity(),
                 }
     }
 
-    private fun addRating(restaurantRef: DocumentReference, rating: Rating): Task<Void> {
-        // Create reference for new rating, for use inside the transaction
-        val ratingRef = restaurantRef.collection("ratings").document()
-
-        // In a transaction, add the new rating and update the aggregate totals
-        return firestore.runTransaction { transaction ->
-            val restaurant = transaction.get(restaurantRef).toObject(Restaurant::class.java)
-            if (restaurant == null) {
-                throw Exception("Resraurant not found at ${restaurantRef.path}")
-            }
-
-            // Compute new number of ratings
-            val newNumRatings = restaurant.numRatings + 1
-
-            // Compute new average rating
-            val oldRatingTotal = restaurant.avgRating * restaurant.numRatings
-            val newAvgRating = (oldRatingTotal + rating.rating) / newNumRatings
-
-            // Set new restaurant info
-            restaurant.numRatings = newNumRatings
-            restaurant.avgRating = newAvgRating
-
-            // Commit to Firestore
-            transaction.set(restaurantRef, restaurant)
-            transaction.set(ratingRef, rating)
-
-            null
-        }
-    }
-
     private fun addMessage(roomRef: DocumentReference, message: Message): Task<Void> {
         // Create reference for new message, for use inside the transaction
         val messagesRef = roomRef.collection("messages").document()
+        val palRoomRef = firestore.collection("users").document(palUid).collection("rooms").document(uid)
         val palMessagesRef = palRoomRef.collection("messages").document()
 
         // In a transaction, add the new message and update the aggregate totals
@@ -198,8 +148,9 @@ class ConversationDetailActivity : AppCompatActivity(),
 
             var room = transaction.get(roomRef).toObject(Room::class.java)
 
-            if (room==null){
+            if (room == null) {
                 room = Room()
+                room.participants = mutableListOf(uid, palUid)
             }
 
             room.lastMsg = message.text
@@ -226,8 +177,8 @@ class ConversationDetailActivity : AppCompatActivity(),
 
     companion object {
 
-        private const val TAG = "RestaurantDetail"
+        private const val TAG = "RoomMessages"
 
-        const val KEY_RESTAURANT_ID = "key_restaurant_id"
+        const val KEY_ROOM_ID = "key_room_id"
     }
 }
