@@ -11,27 +11,56 @@ import android.text.Html
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
-import androidx.cursoradapter.widget.CursorAdapter
-import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.ViewModelProviders
+//import android.view.MenuItem
+//import android.view.View
+//import androidx.annotation.StringRes
+//import androidx.appcompat.app.AlertDialog
+//import androidx.appcompat.app.AppCompatActivity
+//import androidx.appcompat.widget.SearchView
+//import androidx.cursoradapter.widget.CursorAdapter
+//import androidx.cursoradapter.widget.SimpleCursorAdapter
+//import androidx.lifecycle.ViewModelProviders
+//import androidx.recyclerview.widget.LinearLayoutManager
+//import com.craiovadata.android.messenger.R.id.*
+//import com.craiovadata.android.messenger.adapter.RoomAdapter
+//import com.craiovadata.android.messenger.model.User
+//import com.craiovadata.android.messenger.util.Util.buildKeywords
+//import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
+//import com.firebase.ui.auth.AuthUI
+//import com.firebase.ui.auth.ErrorCodes
+//import com.firebase.ui.auth.IdpResponse
+//import com.google.android.material.snackbar.Snackbar
+//import com.google.firebase.auth.FirebaseAuth
+//import com.google.firebase.auth.FirebaseUser
+//import com.google.firebase.firestore.DocumentSnapshot
+//import com.google.firebase.firestore.FirebaseFirestore
+//import com.google.firebase.firestore.FirebaseFirestoreException
+//import com.google.firebase.firestore.QuerySnapshot
+//import kotlinx.android.synthetic.main.activity_main.*
+
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.onNavDestinationSelected
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
-import com.craiovadata.android.messenger.model.User
 import com.craiovadata.android.messenger.util.Util.buildKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
-import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.*
-import kotlinx.android.synthetic.main.activity_main.*
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.QuerySnapshot
 
 
 class MainActivity : AppCompatActivity(),
@@ -76,10 +105,10 @@ class MainActivity : AppCompatActivity(),
             override fun onDataChanged() {
                 // Show/hide content if the query returns empty.
                 if (itemCount == 0) {
-                    recyclerRooms.visibility = View.GONE
+                    recyclerRestaurants.visibility = View.GONE
                     viewEmpty.visibility = View.VISIBLE
                 } else {
-                    recyclerRooms.visibility = View.VISIBLE
+                    recyclerRestaurants.visibility = View.VISIBLE
                     viewEmpty.visibility = View.GONE
                 }
             }
@@ -91,8 +120,8 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
-        recyclerRooms.layoutManager = LinearLayoutManager(this)
-        recyclerRooms.adapter = adapter
+        recyclerRestaurants.layoutManager = LinearLayoutManager(this)
+        recyclerRestaurants.adapter = adapter
 
         filterDialog = FilterDialogFragment()
 

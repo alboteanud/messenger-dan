@@ -1,5 +1,6 @@
 package com.craiovadata.android.messenger
 
+import android.app.DownloadManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -42,7 +43,7 @@ class MessagesActivity : AppCompatActivity(),
 
         val query = roomRef
                 .collection("messages")
-                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .orderBy("timestamp", DownloadManager.Query.Direction.DESCENDING)
                 .limit(50)
 
         messageAdapter = object : MessageAdapter(query) {

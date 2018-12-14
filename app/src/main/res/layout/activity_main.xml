@@ -6,13 +6,13 @@
     android:layout_height="match_parent"
     android:background="#E0E0E0">
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
         android:theme="@style/AppTheme"
-        app:logo="@drawable/ic_restaurant_white_24px"
+        app:logo="@drawable/ic_message_white_24px"
         app:popupTheme="@style/Theme.AppCompat.Light.DarkActionBar"
         app:title="@string/app_name"
         app:titleMarginStart="24dp"
@@ -135,7 +135,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="@string/message_no_results"
-            android:textColor="@color/greyDisabled" />
+            android:textColor="#aaa" />
 
     </LinearLayout>
 
