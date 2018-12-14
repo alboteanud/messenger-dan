@@ -10,7 +10,7 @@ data class Room(
         @ServerTimestamp var created: Date? = null,
         var author: String? = "",
         var lastMsg: String? = "",
-        var participants: MutableList<String> = mutableListOf(),
+        var participants: MutableList<String> = mutableListOf(""),
         @ServerTimestamp var msgTimestamp: Date? = null
 ) {
 

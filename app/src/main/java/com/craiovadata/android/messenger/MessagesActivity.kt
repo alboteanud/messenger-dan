@@ -43,7 +43,7 @@ class MessagesActivity : AppCompatActivity(),
 
         val query = roomRef
                 .collection("messages")
-                .orderBy("timestamp", DownloadManager.Query.Direction.DESCENDING)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(50)
 
         messageAdapter = object : MessageAdapter(query) {

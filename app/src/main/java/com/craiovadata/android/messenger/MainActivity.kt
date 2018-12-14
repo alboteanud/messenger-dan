@@ -1,7 +1,6 @@
 package com.craiovadata.android.messenger
 
 import android.app.Activity
-import android.app.DownloadManager
 import android.app.SearchManager
 import android.content.Intent
 import android.database.MatrixCursor
@@ -11,81 +10,47 @@ import android.text.Html
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
+import androidx.cursoradapter.widget.CursorAdapter
+import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.ViewModelProviders
-//import android.view.MenuItem
-//import android.view.View
-//import androidx.annotation.StringRes
-//import androidx.appcompat.app.AlertDialog
-//import androidx.appcompat.app.AppCompatActivity
-//import androidx.appcompat.widget.SearchView
-//import androidx.cursoradapter.widget.CursorAdapter
-//import androidx.cursoradapter.widget.SimpleCursorAdapter
-//import androidx.lifecycle.ViewModelProviders
-//import androidx.recyclerview.widget.LinearLayoutManager
-//import com.craiovadata.android.messenger.R.id.*
-//import com.craiovadata.android.messenger.adapter.RoomAdapter
-//import com.craiovadata.android.messenger.model.User
-//import com.craiovadata.android.messenger.util.Util.buildKeywords
-//import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
-//import com.firebase.ui.auth.AuthUI
-//import com.firebase.ui.auth.ErrorCodes
-//import com.firebase.ui.auth.IdpResponse
-//import com.google.android.material.snackbar.Snackbar
-//import com.google.firebase.auth.FirebaseAuth
-//import com.google.firebase.auth.FirebaseUser
-//import com.google.firebase.firestore.DocumentSnapshot
-//import com.google.firebase.firestore.FirebaseFirestore
-//import com.google.firebase.firestore.FirebaseFirestoreException
-//import com.google.firebase.firestore.QuerySnapshot
-//import kotlinx.android.synthetic.main.activity_main.*
-
-import androidx.navigation.NavController
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.onNavDestinationSelected
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
+import com.craiovadata.android.messenger.model.User
 import com.craiovadata.android.messenger.util.Util.buildKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
-import com.google.firebase.firestore.QuerySnapshot
-
+import com.google.firebase.firestore.*
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
         FilterDialogFragment.FilterListener,
         RoomAdapter.OnRoomSelectedListener {
 
     lateinit var firestore: FirebaseFirestore
-    lateinit var query: DownloadManager.Query
+    lateinit var query: Query
 
     private lateinit var filterDialog: FilterDialogFragment
     lateinit var adapter: RoomAdapter
 
     private lateinit var viewModel: MainActivityViewModel
 
-    private val uid: String
-        get() = FirebaseAuth.getInstance().currentUser!!.uid
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        // for debugging only. User?? = null
-        val firebaseUser = FirebaseAuth.getInstance().currentUser
-        toolbar.title = firebaseUser?.email
+
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
@@ -97,8 +62,12 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun initRoomAdapter() {
-        query = firestore.collection("users").document(uid).collection("rooms")
-                .orderBy("msgTimestamp", DownloadManager.Query.Direction.DESCENDING)
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+
+        toolbar.title = user.displayName
+
+        query = firestore.collection("users").document(user.uid).collection("rooms")
+                .orderBy("msgTimestamp", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
         adapter = object : RoomAdapter(query, this@MainActivity) {
@@ -320,7 +289,7 @@ class MainActivity : AppCompatActivity(),
         val firebaseUser = FirebaseAuth.getInstance().currentUser!!.uid
         val ref = firestore.collection("users").document(firebaseUser).collection("rooms")
         // Construct query basic query
-        var query: DownloadManager.Query = ref
+        var query: Query = ref
 
         // Limit items
         query = query.limit(LIMIT.toLong())
