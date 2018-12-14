@@ -2,7 +2,7 @@ package com.craiovadata.android.messenger.util
 
 object Util {
 
-    fun buildKeywords(email: String, displayName: String): MutableList<String> {
+    fun getKeywords(email: String, displayName: String): MutableList<String> {
         val emailLC = email.toLowerCase()
         val displayNameLC = displayName.toLowerCase()
 
@@ -32,7 +32,6 @@ object Util {
                     keywords.add(substr)
             }
         }
-
     }
 
     private fun usernameFromEmail(email: String): String {

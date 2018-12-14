@@ -1,6 +1,5 @@
 package com.craiovadata.android.messenger
 
-import android.app.DownloadManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -11,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.Room
+import com.craiovadata.android.messenger.model.User
 import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
@@ -27,7 +27,7 @@ class MessagesActivity : AppCompatActivity(),
     private lateinit var messageAdapter: MessageAdapter
     private var listenerRegistration: ListenerRegistration? = null
     private lateinit var palUid: String
-
+    var palUser: User? = null
     val uid: String
         get() = FirebaseAuth.getInstance().currentUser!!.uid
 
@@ -39,6 +39,12 @@ class MessagesActivity : AppCompatActivity(),
                 ?: throw IllegalArgumentException("Must pass extra $KEY_ROOM_ID")
 
         firestore = FirebaseFirestore.getInstance()
+
+        val palUserRef = firestore.collection("users").document(palUid)
+        palUserRef.get().addOnSuccessListener { result ->
+                    palUser = result.toObject(User::class.java)
+                }
+
         roomRef = firestore.collection("users").document(uid).collection("rooms").document(palUid)
 
         val query = roomRef
@@ -102,9 +108,15 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun onRoomLoaded(room: Room) {
-        restaurantName.text = room.participants.toString()
+        var participants = ""
+        for (one in room.participants){
+            if (one["uid"] != uid)
+                participants+= (one["name"].toString() + "\n")
+        }
 
-        // Background image
+
+        restaurantName.text = participants
+
 //        Glide.with(restaurantImage.context)
 //                .load(room.photo)
 //                .into(restaurantImage)
@@ -151,11 +163,22 @@ class MessagesActivity : AppCompatActivity(),
 
             if (room == null) {
                 room = Room()
-                room.participants = mutableListOf(uid, palUid)
+
+                val usr = HashMap<String, Any>()
+                usr.put("name", message.displayName!!)
+                usr.put("uid", message.userId!!)
+                usr.put("photoUrl", message.photoUrl!!)
+
+                val usrPal = HashMap<String, Any>()
+                usrPal.put("name", palUser!!.name)
+                usrPal.put("uid", palUid)
+                usrPal.put("photoUrl", palUser!!.photoUrl)
+
+                room.participants = listOf(usr, usrPal)
             }
 
             room.lastMsg = message.text
-            room.author = message.userName
+            room.lastMsgAuthor = message.displayName
 
             transaction.set(roomRef, room)
             transaction.set(palRoomRef, room)

@@ -21,7 +21,7 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.model.User
-import com.craiovadata.android.messenger.util.Util.buildKeywords
+import com.craiovadata.android.messenger.util.Util.getKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
 
 
-
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
         FirebaseFirestore.setLoggingEnabled(true)
@@ -67,7 +66,7 @@ class MainActivity : AppCompatActivity(),
         toolbar.title = user.displayName
 
         query = firestore.collection("users").document(user.uid).collection("rooms")
-                .orderBy("msgTimestamp", Query.Direction.DESCENDING)
+                .orderBy("lastMsgTime", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
         adapter = object : RoomAdapter(query, this@MainActivity) {
@@ -236,6 +235,7 @@ class MainActivity : AppCompatActivity(),
                 if (firebaseUser != null) {
                     writeNewUser(firebaseUser)
                     initRoomAdapter()
+                    adapter.startListening()
                 }
             } else {
                 if (response == null) {
@@ -255,7 +255,7 @@ class MainActivity : AppCompatActivity(),
         val email = firebaseUser.email.toString()
         val displayName = firebaseUser.displayName.toString()
 
-        val keywords = buildKeywords(email, displayName)
+        val keywords = getKeywords(email, displayName)
 
         val user = User(email, displayName, firebaseUser.photoUrl.toString(), keywords)
         val uid = firebaseUser.uid
@@ -281,8 +281,6 @@ class MainActivity : AppCompatActivity(),
 
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
-
-        Log.d(TAG, "ref id: " + room.reference.id)
     }
 
     override fun onFilter(filters: Filters) {

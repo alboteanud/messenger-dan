@@ -33,7 +33,7 @@ open class MessageAdapter(query: Query) : FirestoreAdapter<MessageAdapter.ViewHo
                 return
             }
 
-            itemView.ratingItemName.text = rating.userName
+            itemView.ratingItemName.text = rating.displayName
             itemView.ratingItemText.text = rating.text
 
             if (rating.timestamp != null) {

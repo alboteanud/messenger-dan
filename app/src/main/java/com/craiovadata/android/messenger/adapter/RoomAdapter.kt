@@ -4,8 +4,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.Room
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_restaurant.view.*
@@ -33,8 +35,8 @@ open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListene
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(
-            snapshot: DocumentSnapshot,
-            listener: OnRoomSelectedListener?
+                snapshot: DocumentSnapshot,
+                listener: OnRoomSelectedListener?
         ) {
 
             val room = snapshot.toObject(Room::class.java)
@@ -42,17 +44,30 @@ open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListene
                 return
             }
 
+            val user = FirebaseAuth.getInstance().currentUser
+            var participants = ""
+            val photoUrls: MutableList<String> = mutableListOf()
+
+            for (one in room.participants) {
+                if (one["uid"] != user!!.uid) {
+                    participants += (one["name"].toString() + " ")
+                    val url = one["photoUrl"].toString()
+                    photoUrls.add(url)
+                }
+
+            }
+
             val resources = itemView.resources
 
-            // Load image
-//            Glide.with(itemView.restaurantItemImage.context)
-//                    .load(room.photoUrl)
-//                    .into(itemView.restaurantItemImage)
+            if (!photoUrls.isEmpty())
+                Glide.with(itemView.restaurantItemImage.context)
+                        .load(photoUrls[0])
+                        .into(itemView.restaurantItemImage)
 
 
-            itemView.restaurantItemName.text = room.participants.toString()
+            itemView.restaurantItemName.text = participants
             itemView.restaurantItemCategory.text = room.lastMsg
-            itemView.restaurantItemCity.text = room.author
+            itemView.restaurantItemCity.text = room.lastMsgAuthor
 
             // Click listener
             itemView.setOnClickListener {

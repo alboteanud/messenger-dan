@@ -9,17 +9,19 @@ import java.util.Date
  * Model POJO for a message.
  */
 data class Message(
-    var userId: String? = null,
-    var userName: String? = null,
-    var text: String? = null,
-    @ServerTimestamp var timestamp: Date? = null
+        var userId: String? = null,
+        var displayName: String? = null,
+        var photoUrl: String? = null,
+        var text: String? = null,
+        @ServerTimestamp var timestamp: Date? = null
 ) {
 
     constructor(user: FirebaseUser, text: String) : this() {
         this.userId = user.uid
-        this.userName = user.displayName
-        if (TextUtils.isEmpty(this.userName)) {
-            this.userName = user.email
+        this.displayName = user.displayName
+        this.photoUrl = user.photoUrl.toString()
+        if (TextUtils.isEmpty(this.displayName)) {
+            this.displayName = user.email
         }
 
         this.text = text
