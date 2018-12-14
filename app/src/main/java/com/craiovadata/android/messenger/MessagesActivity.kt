@@ -101,7 +101,7 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun onRoomLoaded(room: Room) {
-        roomName.text = room.participants.toString()
+        restaurantName.text = room.participants.toString()
 
         // Background image
 //        Glide.with(restaurantImage.context)

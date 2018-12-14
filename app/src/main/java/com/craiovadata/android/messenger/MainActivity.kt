@@ -1,6 +1,7 @@
 package com.craiovadata.android.messenger
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.app.SearchManager
 import android.content.Intent
 import android.database.MatrixCursor
@@ -32,12 +33,13 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.*
 import kotlinx.android.synthetic.main.activity_main.*
 
+
 class MainActivity : AppCompatActivity(),
         FilterDialogFragment.FilterListener,
         RoomAdapter.OnRoomSelectedListener {
 
     lateinit var firestore: FirebaseFirestore
-    lateinit var query: Query
+    lateinit var query: DownloadManager.Query
 
     private lateinit var filterDialog: FilterDialogFragment
     lateinit var adapter: RoomAdapter
@@ -67,7 +69,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun initRoomAdapter() {
         query = firestore.collection("users").document(uid).collection("rooms")
-                .orderBy("msgTimestamp", Query.Direction.DESCENDING)
+                .orderBy("msgTimestamp", DownloadManager.Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
         adapter = object : RoomAdapter(query, this@MainActivity) {
@@ -289,7 +291,7 @@ class MainActivity : AppCompatActivity(),
         val firebaseUser = FirebaseAuth.getInstance().currentUser!!.uid
         val ref = firestore.collection("users").document(firebaseUser).collection("rooms")
         // Construct query basic query
-        var query: Query = ref
+        var query: DownloadManager.Query = ref
 
         // Limit items
         query = query.limit(LIMIT.toLong())

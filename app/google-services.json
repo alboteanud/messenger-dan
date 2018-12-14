@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "610356099617",
+    "firebase_url": "https://friendlyeats-android-4d52b.firebaseio.com",
+    "project_id": "friendlyeats-android-4d52b",
+    "storage_bucket": "friendlyeats-android-4d52b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610356099617:android:c1f0f09aa42eba16",
+        "android_client_info": {
+          "package_name": "com.google.firebase.example.fireeats"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "610356099617-3cbapdmj9epqiiidav0d2m5l7kj169rv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.google.firebase.example.fireeats",
+            "certificate_hash": "6e1f8a3f1df97c6e34f7762255d50dabb8772f7c"
+          }
+        },
+        {
+          "client_id": "610356099617-vbhu8hj1ia8m8cqgm9ht71kh0381p51t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo48G4JEruUyKg4l_NGeL_qy4J44YKCcw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "610356099617-vbhu8hj1ia8m8cqgm9ht71kh0381p51t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610356099617:android:fcfef757a832647b",
+        "android_client_info": {
+          "package_name": "com.google.firebase.quickstart.database"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "610356099617-i4n8bl0anq756of6nst7h0ud7kt9n0e8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.google.firebase.quickstart.database",
+            "certificate_hash": "6e1f8a3f1df97c6e34f7762255d50dabb8772f7c"
+          }
+        },
+        {
+          "client_id": "610356099617-vbhu8hj1ia8m8cqgm9ht71kh0381p51t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo48G4JEruUyKg4l_NGeL_qy4J44YKCcw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "610356099617-vbhu8hj1ia8m8cqgm9ht71kh0381p51t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
