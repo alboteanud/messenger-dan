@@ -9,9 +9,9 @@
     <string name="cancel">Cancel</string>
     <string name="message_no_results">Oops, couldn\'t find any results\nthat matched your filter</string>
     <string name="message_no_reviews">Be the first to leave a review!</string>
-    <string name="hint_review">How was your experience?</string>
+    <string name="hint_message">message</string>
     <string name="submit">Submit</string>
-    <string name="filter_add_review">Add review</string>
+    <string name="add_message">Send message</string>
 
     <string name="title_sign_in_error">Sign In Error</string>
     <string name="message_no_network">No network connection.</string>

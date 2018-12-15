@@ -7,6 +7,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.Room
@@ -42,8 +43,8 @@ class MessagesActivity : AppCompatActivity(),
 
         val palUserRef = firestore.collection("users").document(palUid)
         palUserRef.get().addOnSuccessListener { result ->
-                    palUser = result.toObject(User::class.java)
-                }
+            palUser = result.toObject(User::class.java)
+        }
 
         roomRef = firestore.collection("users").document(uid).collection("rooms").document(palUid)
 
@@ -109,17 +110,21 @@ class MessagesActivity : AppCompatActivity(),
 
     private fun onRoomLoaded(room: Room) {
         var participants = ""
-        for (one in room.participants){
-            if (one["uid"] != uid)
-                participants+= (one["name"].toString() + "\n")
+        var pal: HashMap<String, Any>? = null
+        for (one in room.participants) {
+            if (one["uid"] != uid) {
+                participants += (one["name"].toString() + "\n")
+                pal = one
+            }
+
         }
 
 
         restaurantName.text = participants
-
-//        Glide.with(restaurantImage.context)
-//                .load(room.photo)
-//                .into(restaurantImage)
+        val photoUrl = pal!!["photoUrl"]
+        Glide.with(restaurantImage.context)
+                .load(photoUrl)
+                .into(restaurantImage)
     }
 
     private fun onBackArrowClicked() {

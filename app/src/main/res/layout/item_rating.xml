@@ -37,12 +37,6 @@
         android:layout_toRightOf="@+id/ratingItemDivider"
         tools:text="9/27/2017" />
 
-    <me.zhanghai.android.materialratingbar.MaterialRatingBar
-        android:id="@+id/ratingItemRating"
-        style="@style/Widget.MaterialRatingBar.RatingBar.Indicator.Small"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true" />
 
     <TextView
         android:id="@+id/ratingItemText"
