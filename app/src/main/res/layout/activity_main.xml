@@ -18,90 +18,12 @@
         app:titleMarginStart="24dp"
         app:titleTextColor="@android:color/white" />
 
-    <FrameLayout
-        android:id="@+id/filterBarContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/toolbar"
-        android:background="@color/colorPrimary"
-        android:paddingBottom="12dp"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp">
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/filterBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:elevation="12dp"
-            android:foreground="?attr/selectableItemBackground">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:id="@+id/buttonFilter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:padding="8dp"
-                    android:tint="@color/greySecondary"
-                    app:srcCompat="@drawable/ic_filter_list_white_24px" />
-
-                <LinearLayout
-                    android:id="@+id/textCurrentSearchContainer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_marginLeft="8dp"
-                    android:layout_toRightOf="@+id/buttonFilter"
-                    android:orientation="vertical"
-                    android:paddingBottom="8dp"
-                    android:paddingTop="8dp">
-
-                    <TextView
-                        android:id="@+id/textCurrentSearch"
-                        style="@style/AppTheme.Body1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/all_restaurants"
-                        android:textColor="@color/greySecondary"
-                        tools:text="Filter" />
-
-                    <TextView
-                        android:id="@+id/textCurrentSortBy"
-                        style="@style/AppTheme.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/sorted_by_rating"
-                        android:textColor="@color/greyDisabled" />
-
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/buttonClearFilter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:layout_centerVertical="true"
-                    android:padding="8dp"
-                    android:tint="@color/greySecondary"
-                    app:srcCompat="@drawable/ic_close_white_24px" />
-
-            </RelativeLayout>
-
-        </androidx.cardview.widget.CardView>
-
-    </FrameLayout>
-
     <!-- Main Restaurants recycler -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerRestaurants"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/filterBarContainer"
+        android:layout_below="@+id/toolbar"
         android:background="@android:color/white"
         tools:listitem="@layout/item_restaurant" />
 
@@ -109,7 +31,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="4dp"
-        android:layout_below="@+id/filterBarContainer"
+        android:layout_below="@+id/toolbar"
         android:background="@drawable/bg_shadow" />
 
     <!-- Empty list (pizza guy) view -->
