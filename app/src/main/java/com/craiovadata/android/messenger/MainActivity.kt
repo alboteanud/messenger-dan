@@ -102,13 +102,14 @@ class MainActivity : AppCompatActivity(),
         }
 
         // Start listening for Firestore updates
-        adapter.startListening()
+        if (::adapter.isInitialized) // maybe user = null so adapter not initialised
+            adapter.startListening()
 
     }
 
     public override fun onStop() {
         super.onStop()
-        if (::adapter.isInitialized)
+        if (::adapter.isInitialized) // maybe user = null so adapter not initialised
             adapter.stopListening()
     }
 
@@ -272,9 +273,9 @@ class MainActivity : AppCompatActivity(),
         // Sign in with FirebaseUI
         val intent = AuthUI.getInstance().createSignInIntentBuilder()
                 .setAvailableProviders(listOf(
+                        AuthUI.IdpConfig.GoogleBuilder().build(),
                         AuthUI.IdpConfig.EmailBuilder().build(),
-                        AuthUI.IdpConfig.PhoneBuilder().build(),
-                        AuthUI.IdpConfig.GoogleBuilder().build()
+                        AuthUI.IdpConfig.PhoneBuilder().build()
 //                        AuthUI.IdpConfig.FacebookBuilder().build(),
 //                        AuthUI.IdpConfig.TwitterBuilder().build()
                 ))
