@@ -6,14 +6,13 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.Message
-import com.craiovadata.android.messenger.model.Rating
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_rating.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * RecyclerView adapter for a list of [Rating].
+ * RecyclerView adapter for a list of [Message].
  */
 open class MessageAdapter(query: Query) : FirestoreAdapter<MessageAdapter.ViewHolder>(query) {
 

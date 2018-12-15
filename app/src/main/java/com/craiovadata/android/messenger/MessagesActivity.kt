@@ -127,7 +127,7 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun onAddRatingClicked() {
-        messageDialog?.show(supportFragmentManager, RatingDialogFragment.TAG)
+        messageDialog?.show(supportFragmentManager, MessageDialogFragment.TAG)
     }
 
     override fun onMessage(message: Message) {
