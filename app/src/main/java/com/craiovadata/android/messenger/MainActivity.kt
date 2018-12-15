@@ -6,50 +6,40 @@ import android.content.Intent
 import android.database.MatrixCursor
 import android.os.Bundle
 import android.provider.BaseColumns
-import android.text.Html
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
+import android.widget.CursorAdapter
+import android.widget.SimpleCursorAdapter
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
-import androidx.cursoradapter.widget.CursorAdapter
-import androidx.cursoradapter.widget.SimpleCursorAdapter
+import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModelProviders
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.RoomAdapter
-import com.craiovadata.android.messenger.model.User
-import com.craiovadata.android.messenger.util.Util.getKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
-import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.*
-import kotlinx.android.synthetic.main.activity_main.*
+
 
 class MainActivity : AppCompatActivity(),
-        FilterDialogFragment.FilterListener,
         RoomAdapter.OnRoomSelectedListener {
 
     lateinit var firestore: FirebaseFirestore
     lateinit var query: Query
-
-    private lateinit var filterDialog: FilterDialogFragment
     lateinit var adapter: RoomAdapter
 
     private lateinit var viewModel: MainActivityViewModel
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
@@ -91,11 +81,6 @@ class MainActivity : AppCompatActivity(),
         recyclerRestaurants.layoutManager = LinearLayoutManager(this)
         recyclerRestaurants.adapter = adapter
 
-        filterDialog = FilterDialogFragment()
-
-        filterBar.setOnClickListener { onFilterClicked() }
-        buttonClearFilter.setOnClickListener { onClearFilterClicked() }
-
     }
 
     public override fun onStart() {
@@ -106,9 +91,6 @@ class MainActivity : AppCompatActivity(),
             startSignIn()
             return
         }
-
-        // Apply filters
-        onFilter(viewModel.filters)
 
         // Start listening for Firestore updates
         adapter.startListening()
@@ -136,10 +118,10 @@ class MainActivity : AppCompatActivity(),
                 null,
                 form,
                 intArrayOf(android.R.id.text1),
-                0);
+                0)
         var users: QuerySnapshot? = null
 
-        searchView.setSuggestionsAdapter(suggestionAdapter)
+        searchView.suggestionsAdapter = suggestionAdapter
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
@@ -202,7 +184,7 @@ class MainActivity : AppCompatActivity(),
                 startActivity(intent)
                 overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
 
-                return true;
+                return true
             }
 
             override fun onSuggestionSelect(position: Int): Boolean {
@@ -263,17 +245,6 @@ class MainActivity : AppCompatActivity(),
         firestore.collection("users").document(uid).set(user)
     }
 
-    private fun onFilterClicked() {
-        // Show the dialog containing filter options
-        filterDialog.show(supportFragmentManager, FilterDialogFragment.TAG)
-    }
-
-    private fun onClearFilterClicked() {
-        filterDialog.resetFilters()
-
-        onFilter(Filters.default)
-    }
-
     override fun onRoomSelected(room: DocumentSnapshot) {
         // Go to the details page for the selected room
         val intent = Intent(this, MessagesActivity::class.java)
@@ -281,25 +252,6 @@ class MainActivity : AppCompatActivity(),
 
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
-    }
-
-    override fun onFilter(filters: Filters) {
-        val firebaseUser = FirebaseAuth.getInstance().currentUser!!.uid
-        val ref = firestore.collection("users").document(firebaseUser).collection("rooms")
-        // Construct query basic query
-        var query: Query = ref
-
-        // Limit items
-        query = query.limit(LIMIT.toLong())
-
-        // Update the query
-        adapter.setQuery(query)
-
-        // Set header
-        textCurrentSearch.text = Html.fromHtml(filters.getSearchDescription(this))
-
-        // Save filters
-        viewModel.filters = filters
     }
 
     private fun shouldStartSignIn(): Boolean {

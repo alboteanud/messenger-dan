@@ -13,6 +13,4 @@ data class Room(
         var lastMsg: String? = "",
         var participants: List<HashMap<String, Any>> = listOf(),
         @ServerTimestamp var lastMsgTime: Date? = null
-) {
-
-}
+)

@@ -6,7 +6,9 @@ import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.Room
@@ -35,7 +37,7 @@ class MessagesActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_restaurant_detail)
 
-        palUid = intent.extras?.getString(KEY_ROOM_ID)
+        palUid = intent.extras.getString(KEY_ROOM_ID)
                 ?: throw IllegalArgumentException("Must pass extra $KEY_ROOM_ID")
 
         firestore = FirebaseFirestore.getInstance()

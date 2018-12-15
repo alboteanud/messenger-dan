@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
+import com.craiovadata.android.messenger.R.id.restaurantFormRating
+import com.craiovadata.android.messenger.R.id.restaurantFormText
 import com.craiovadata.android.messenger.model.Rating
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.android.synthetic.main.dialog_rating.*
