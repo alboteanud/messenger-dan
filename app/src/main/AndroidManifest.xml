@@ -12,7 +12,6 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
-
         <activity
             android:name="com.craiovadata.android.messenger.MainActivity"
             android:theme="@style/AppTheme.Activity">
@@ -66,9 +65,12 @@ See README(https://goo.gl/l4GJaQ) for more. -->
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
 
-
-
         </service>
+
+
+        <service
+            android:name=".services.RegistrationIntentService"
+            android:exported="false"></service>
 
 
     </application>

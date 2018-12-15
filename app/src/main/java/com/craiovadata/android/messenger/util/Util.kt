@@ -1,5 +1,11 @@
 package com.craiovadata.android.messenger.util
 
+import android.app.Activity
+import android.util.Log
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
+
+
 object Util {
 
     fun getKeywords(email: String, displayName: String): MutableList<String> {
@@ -48,6 +54,29 @@ object Util {
         } else {
             arrayOf(s)
         }
+    }
+
+    /**
+     * Check the device to make sure it has the Google Play Services APK. If
+     * it doesn't, display a dialog that allows users to download the APK from
+     * the Google Play Store or enable it in the device's system settings.
+     */
+    fun checkPlayServices(activity: Activity): Boolean {
+        val PLAY_SERVICES_RESOLUTION_REQUEST = 9000
+        val apiAvailability = GoogleApiAvailability.getInstance()
+        val resultCode = apiAvailability.isGooglePlayServicesAvailable(activity)
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+
+                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
+                        .show()
+            } else {
+                Log.i("Util", "This device is not supported.")
+//                activity.finish()
+            }
+            return false
+        }
+        return true
     }
 
 

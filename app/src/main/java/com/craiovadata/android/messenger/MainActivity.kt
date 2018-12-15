@@ -6,7 +6,6 @@ import android.content.Intent
 import android.database.MatrixCursor
 import android.os.Bundle
 import android.provider.BaseColumns
-import android.text.Html
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -15,15 +14,14 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.core.app.ActivityCompat.startActivityForResult
-import androidx.core.content.ContextCompat.startActivity
 import androidx.cursoradapter.widget.CursorAdapter
 import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.model.User
+import com.craiovadata.android.messenger.services.RegistrationIntentService
+import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.util.Util.getKeywords
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
@@ -57,7 +55,14 @@ class MainActivity : AppCompatActivity(),
 
         initRoomAdapter()
 
+        if (checkPlayServices(this)) {
+            // Start IntentService to register this application with GCM.
+            val intent = Intent(this, RegistrationIntentService::class.java)
+            startService(intent)
+        }
+
     }
+
 
     private fun initRoomAdapter() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
@@ -128,10 +133,10 @@ class MainActivity : AppCompatActivity(),
                 null,
                 form,
                 intArrayOf(android.R.id.text1),
-                0);
+                0)
         var users: QuerySnapshot? = null
 
-        searchView.setSuggestionsAdapter(suggestionAdapter)
+        searchView.suggestionsAdapter = suggestionAdapter
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
@@ -194,7 +199,7 @@ class MainActivity : AppCompatActivity(),
                 startActivity(intent)
                 overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
 
-                return true;
+                return true
             }
 
             override fun onSuggestionSelect(position: Int): Boolean {
