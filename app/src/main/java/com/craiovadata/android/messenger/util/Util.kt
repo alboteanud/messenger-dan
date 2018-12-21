@@ -62,14 +62,12 @@ object Util {
      * the Google Play Store or enable it in the device's system settings.
      */
     fun checkPlayServices(activity: Activity): Boolean {
-        val PLAY_SERVICES_RESOLUTION_REQUEST = 9000
+
         val apiAvailability = GoogleApiAvailability.getInstance()
         val resultCode = apiAvailability.isGooglePlayServicesAvailable(activity)
         if (resultCode != ConnectionResult.SUCCESS) {
             if (apiAvailability.isUserResolvableError(resultCode)) {
-
-                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST)
-                        .show()
+                apiAvailability.getErrorDialog(activity, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show()
             } else {
                 Log.i("Util", "This device is not supported.")
 //                activity.finish()
@@ -79,5 +77,6 @@ object Util {
         return true
     }
 
+    private const val PLAY_SERVICES_RESOLUTION_REQUEST = 9000
 
 }

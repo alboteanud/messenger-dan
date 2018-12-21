@@ -8,6 +8,7 @@ import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.Room
@@ -16,40 +17,99 @@ import com.google.android.gms.tasks.Task
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
-import kotlinx.android.synthetic.main.activity_restaurant_detail.*
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.android.synthetic.main.activity_conversation.*
 
 class MessagesActivity : AppCompatActivity(),
-        EventListener<DocumentSnapshot>,
         MessageDialogFragment.MsgListener {
 
     private var messageDialog: MessageDialogFragment? = null
     private lateinit var firestore: FirebaseFirestore
-    private lateinit var roomRef: DocumentReference
+    private lateinit var roomID: String
     private lateinit var messageAdapter: MessageAdapter
-    private var listenerRegistration: ListenerRegistration? = null
-    private lateinit var palUid: String
-    var palUser: User? = null
-    val uid: String
-        get() = FirebaseAuth.getInstance().currentUser!!.uid
+    private var room: Room? = null
+    private lateinit var uid: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_restaurant_detail)
-
-        palUid = intent.extras?.getString(KEY_ROOM_ID)
-                ?: throw IllegalArgumentException("Must pass extra $KEY_ROOM_ID")
-
+        setContentView(R.layout.activity_conversation)
         firestore = FirebaseFirestore.getInstance()
+        uid = FirebaseAuth.getInstance().currentUser!!.uid
 
-        val palUserRef = firestore.collection("users").document(palUid)
-        palUserRef.get().addOnSuccessListener { result ->
-            palUser = result.toObject(User::class.java)
+        if (intent.hasExtra(KEY_ROOM_ID)) {
+            roomID = intent.extras?.getString(KEY_ROOM_ID)!!
+            fetchRoomAndUpdateHead(roomID)
+            initMsgList(roomID)
+            FirebaseMessaging.getInstance().subscribeToTopic(roomID)
+        } else if (intent.hasExtra(KEY_USER_ID)) {
+            val palUid = intent.extras?.getString(KEY_USER_ID)!!
+            getRoom(palUid)
         }
 
-        roomRef = firestore.collection("users").document(uid).collection("rooms").document(palUid)
+        messageDialog = MessageDialogFragment()
 
-        val query = roomRef
-                .collection("messages")
+        restaurantButtonBack.setOnClickListener { onBackArrowClicked() }
+        fabShowRatingDialog.setOnClickListener { onAddMessageClicked() }
+    }
+
+    private fun fetchRoomAndUpdateHead(roomID: String) {
+        firestore.document("users/${uid}/rooms/${roomID}").get().addOnSuccessListener { snapshot ->
+            if (snapshot != null) {
+                room = snapshot.toObject(Room::class.java)
+                initHeaderUI(room)
+            }
+        }
+    }
+
+    private fun getRoom(palUid: String) {
+        val roomsRef = firestore.collection("users/${uid}/rooms")
+        roomsRef.whereEqualTo("palUid", palUid).limit(1).get()
+                .addOnSuccessListener { snapshot ->
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val document = snapshot.documents[0]
+                        roomID = document.id
+                        room = document.toObject(Room::class.java)!!
+                        initHeaderUI(room)
+                    } else {
+                        Log.d(TAG, "No such document. Creating new room.")
+                        roomID = roomsRef.document().id
+                        setNewRoom(roomID, palUid, uid) // incl. updateHeadUI
+                        setNewRoom(roomID, uid, palUid)
+                    }
+                    initMsgList(roomID)
+                }
+
+    }
+
+    private fun setNewRoom(roomID: String, sourceUid: String, destUid: String) {
+        firestore.document("users/${sourceUid}").get()
+                .addOnSuccessListener { snapshot ->
+                    if (snapshot != null) {
+                        val user = snapshot.toObject(User::class.java)
+                        if (user != null) {
+                            val newRoom = Room(user.name, snapshot.id, user.photoUrl)
+                            if (destUid == uid) {
+                                room = newRoom
+                                initHeaderUI(room)
+                                FirebaseMessaging.getInstance().subscribeToTopic(roomID)
+                            }
+                            firestore.document("users/${destUid}/rooms/${roomID}").set(newRoom)
+//                            firestore.document("users/${destUid}/subscriptions/${roomID}").set(HashMap<String, Any>(){})
+                        }
+                    }
+                }
+    }
+
+    private fun initHeaderUI(room: Room?) {
+        restaurantName.text = room?.palName
+        val photoUrl = room?.palPhotoUrl
+        Glide.with(restaurantImage.context)
+                .load(photoUrl)
+                .into(restaurantImage)
+    }
+
+    private fun initMsgList(roomID: String) {
+        val query = firestore.collection("users/${uid}/rooms/${roomID}/messages")
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(50)
 
@@ -67,77 +127,16 @@ class MessagesActivity : AppCompatActivity(),
         recyclerRatings.layoutManager = LinearLayoutManager(this)
         recyclerRatings.adapter = messageAdapter
 
-        messageDialog = MessageDialogFragment()
-
-        restaurantButtonBack.setOnClickListener { onBackArrowClicked() }
-        fabShowRatingDialog.setOnClickListener { onAddRatingClicked() }
-    }
-
-    public override fun onStart() {
-        super.onStart()
-
         messageAdapter.startListening()
-        listenerRegistration = roomRef.addSnapshotListener(this)
     }
 
-    public override fun onStop() {
-        super.onStop()
-
-        messageAdapter.stopListening()
-
-        listenerRegistration?.remove()
-        listenerRegistration = null
-    }
-
-    override fun finish() {
-        super.finish()
-        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
-    }
-
-    override fun onEvent(snapshot: DocumentSnapshot?, e: FirebaseFirestoreException?) {
-        if (e != null) {
-            Log.w(TAG, "restaurant:onEvent", e)
-            return
-        }
-
-        snapshot?.let {
-            val room = snapshot.toObject(Room::class.java)
-            if (room != null) {
-                onRoomLoaded(room)
-            }
-        }
-    }
-
-    private fun onRoomLoaded(room: Room) {
-        var participants = ""
-        var pal: HashMap<String, Any>? = null
-        for (one in room.participants) {
-            if (one["uid"] != uid) {
-                participants += (one["name"].toString() + "\n")
-                pal = one
-            }
-
-        }
-
-
-        restaurantName.text = participants
-        val photoUrl = pal!!["photoUrl"]
-        Glide.with(restaurantImage.context)
-                .load(photoUrl)
-                .into(restaurantImage)
-    }
-
-    private fun onBackArrowClicked() {
-        onBackPressed()
-    }
-
-    private fun onAddRatingClicked() {
+    private fun onAddMessageClicked() {
         messageDialog?.show(supportFragmentManager, MessageDialogFragment.TAG)
     }
 
     override fun onMessage(message: Message) {
         // In a transaction, add the new rating and update the aggregate totals
-        addMessage(roomRef, message)
+        addMessage(roomID, message)
                 .addOnSuccessListener(this) {
                     Log.d(TAG, "Rating added")
 
@@ -153,47 +152,25 @@ class MessagesActivity : AppCompatActivity(),
                     Snackbar.make(findViewById(android.R.id.content), "Failed to add rating",
                             Snackbar.LENGTH_SHORT).show()
                 }
+
     }
 
-    private fun addMessage(roomRef: DocumentReference, message: Message): Task<Void> {
-        // Create reference for new message, for use inside the transaction
-        val messagesRef = roomRef.collection("messages").document()
-        val palRoomRef = firestore.collection("users").document(palUid).collection("rooms").document(uid)
-        val palMessagesRef = palRoomRef.collection("messages").document()
+    private fun addMessage(roomID: String, message: Message): Task<Void> {
 
-        // In a transaction, add the new message and update the aggregate totals
-        return firestore.runTransaction { transaction ->
+        val msgRef = firestore.collection("users/${uid}/rooms/${roomID}/messages").document()
+        val batch = firestore.batch()
 
-            var room = transaction.get(roomRef).toObject(Room::class.java)
+        batch.set(msgRef, message)
+        batch.set(firestore.collection("users/${room?.palId}/rooms/${roomID}/messages").document(msgRef.id), message)
 
-            if (room == null) {
-                room = Room()
+        val usr = HashMap<String, Any>()
+        usr.put("lastMsgAuthor", message.displayName!!)
+        usr.put("lastMsg", message.text!!)
 
-                val usr = HashMap<String, Any>()
-                usr.put("name", message.displayName!!)
-                usr.put("uid", message.userId!!)
-                usr.put("photoUrl", message.photoUrl!!)
+        batch.update(firestore.document("users/${uid}/rooms/${roomID}"), usr)
+        batch.update(firestore.document("users/${room?.palId}/rooms/${roomID}"), usr)
 
-                val usrPal = HashMap<String, Any>()
-                usrPal.put("name", palUser!!.name)
-                usrPal.put("uid", palUid)
-                usrPal.put("photoUrl", palUser!!.photoUrl)
-
-                room.participants = listOf(usr, usrPal)
-            }
-
-            room.lastMsg = message.text
-            room.lastMsgAuthor = message.displayName
-
-            transaction.set(roomRef, room)
-            transaction.set(palRoomRef, room)
-            transaction.set(messagesRef, message)
-            transaction.set(palMessagesRef, message)
-
-            null
-        }
-
-
+        return batch.commit()
     }
 
     private fun hideKeyboard() {
@@ -204,10 +181,30 @@ class MessagesActivity : AppCompatActivity(),
         }
     }
 
+    public override fun onStart() {
+        super.onStart()
+        if (::messageAdapter.isInitialized)
+            messageAdapter.startListening()
+    }
+
+    public override fun onStop() {
+        super.onStop()
+        if (::messageAdapter.isInitialized)
+            messageAdapter.stopListening()
+    }
+
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+    }
+
+    private fun onBackArrowClicked() {
+        onBackPressed()
+    }
+
     companion object {
-
         private const val TAG = "RoomMessages"
-
         const val KEY_ROOM_ID = "key_room_id"
+        const val KEY_USER_ID = "key_user_id"
     }
 }

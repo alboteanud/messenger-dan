@@ -7,12 +7,14 @@ import kotlin.collections.HashMap
 
 @IgnoreExtraProperties
 data class Room(
-//        var id: String? = "",
-        @ServerTimestamp var created: Date? = null,
+        var palName: String = "",
+        var palId: String = "",
+        var palPhotoUrl: String = "",
         var lastMsgAuthor: String? = "",
         var lastMsg: String? = "",
-        var participants: List<HashMap<String, Any>> = listOf(),
+        @ServerTimestamp var created: Date? = null,
         @ServerTimestamp var lastMsgTime: Date? = null
+//        var participants: List<HashMap<String, Any>> = listOf(),
 ) {
 
 }

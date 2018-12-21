@@ -39,33 +39,19 @@ open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListene
                 listener: OnRoomSelectedListener?
         ) {
 
-            val room = snapshot.toObject(Room::class.java)
-            if (room == null) {
-                return
-            }
+            val room = snapshot.toObject(Room::class.java) ?: return
 
-            val user = FirebaseAuth.getInstance().currentUser
-            var participants = ""
-            val photoUrls: MutableList<String> = mutableListOf()
-
-            for (one in room.participants) {
-                if (one["uid"] != user!!.uid) {
-                    participants += (one["name"].toString() + " ")
-                    val url = one["photoUrl"].toString()
-                    photoUrls.add(url)
-                }
-
-            }
-
-            val resources = itemView.resources
-
-            if (!photoUrls.isEmpty())
-                Glide.with(itemView.restaurantItemImage.context)
-                        .load(photoUrls[0])
-                        .into(itemView.restaurantItemImage)
+//            val user = FirebaseAuth.getInstance().currentUser
+//
+//            val resources = itemView.resources
 
 
-            itemView.restaurantItemName.text = participants
+            Glide.with(itemView.restaurantItemImage.context)
+                    .load(room.palPhotoUrl)
+                    .into(itemView.restaurantItemImage)
+
+
+            itemView.restaurantItemName.text = room.palName
             itemView.restaurantItemCategory.text = room.lastMsg
             itemView.restaurantItemCity.text = room.lastMsgAuthor
 

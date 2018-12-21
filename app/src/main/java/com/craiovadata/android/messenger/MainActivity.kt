@@ -20,9 +20,9 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.model.User
-import com.craiovadata.android.messenger.services.RegistrationIntentService
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.util.Util.getKeywords
+import com.craiovadata.android.messenger.util.UtilUI.setSearch
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -31,6 +31,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.*
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
@@ -41,7 +42,6 @@ class MainActivity : AppCompatActivity(),
     lateinit var adapter: RoomAdapter
     private lateinit var viewModel: MainActivityViewModel
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -50,19 +50,13 @@ class MainActivity : AppCompatActivity(),
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
-        FirebaseFirestore.setLoggingEnabled(true)
+//        FirebaseFirestore.setLoggingEnabled(true)
         firestore = FirebaseFirestore.getInstance()
 
         initRoomAdapter()
 
-        if (checkPlayServices(this)) {
-            // Start IntentService to register this application with GCM.
-            val intent = Intent(this, RegistrationIntentService::class.java)
-            startService(intent)
-        }
-
+        checkPlayServices(this)
     }
-
 
     private fun initRoomAdapter() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
@@ -120,104 +114,33 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        setSearch(menu.findItem(R.id.action_search))
+        setSearch(this@MainActivity, menu.findItem(R.id.action_search))
         return true
 //        return super.onCreateOptionsMenu(menu)
-    }
-
-    private fun setSearch(searchItem: MenuItem?) {
-        val searchView = searchItem!!.actionView as SearchView
-        val form = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
-        val suggestionAdapter: CursorAdapter = SimpleCursorAdapter(this@MainActivity,
-                android.R.layout.simple_list_item_1,
-                null,
-                form,
-                intArrayOf(android.R.id.text1),
-                0)
-        var users: QuerySnapshot? = null
-
-        searchView.suggestionsAdapter = suggestionAdapter
-
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-
-            override fun onQueryTextChange(newText: String): Boolean {
-                Log.d(TAG, "text changed: " + newText)
-
-                if (newText.length <= 3) return false
-
-                firestore.collection("users")
-                        .whereArrayContains("keywords", newText.toLowerCase())
-                        .get()
-                        .addOnSuccessListener { documents ->
-                            users = documents
-                            for (document in documents) {
-//                                Log.d(TAG, document.id + " => " + document.data)
-                            }
-                            addSugestions(users!!)
-                        }
-
-                return false
-            }
-
-            private fun addSugestions(users: QuerySnapshot) {
-
-                val columns = arrayOf(
-                        BaseColumns._ID,
-                        SearchManager.SUGGEST_COLUMN_TEXT_1,
-                        SearchManager.SUGGEST_COLUMN_INTENT_DATA
-                )
-
-                val cursor = MatrixCursor(columns)
-                for (i in 0 until users.size()) {
-                    val name = users.elementAt(i)["name"]
-                    val tmp = arrayOf(Integer.toString(i), name, name)
-                    cursor.addRow(tmp)
-
-                }
-
-                suggestionAdapter.swapCursor(cursor)
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                // task HERE
-                return false
-            }
-
-        })
-
-        searchView.setOnSuggestionListener(object : SearchView.OnSuggestionListener {
-            override fun onSuggestionClick(position: Int): Boolean {
-
-                val palUserSnap = users?.elementAt(position)
-
-                searchView.setQuery(palUserSnap?.get("name").toString(), false)
-                searchView.clearFocus()
-                searchItem.collapseActionView()
-
-                val intent = Intent(this@MainActivity, MessagesActivity::class.java)
-                intent.putExtra(MessagesActivity.KEY_ROOM_ID, palUserSnap?.id)
-                startActivity(intent)
-                overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
-
-                return true
-            }
-
-            override fun onSuggestionSelect(position: Int): Boolean {
-                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-            }
-
-        })
-
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_sign_out -> {
+                unsubscribeAllTopics()
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
             }
+            R.id.menu_test -> {
+
+            }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun unsubscribeAllTopics() {
+        val uid = FirebaseAuth.getInstance().uid
+        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener {snapshot ->
+            for (document in snapshot) {
+                FirebaseMessaging.getInstance().unsubscribeFromTopic(document.id)
+            }
+
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -233,6 +156,7 @@ class MainActivity : AppCompatActivity(),
                     writeNewUser(firebaseUser)
                     initRoomAdapter()
                     adapter.startListening()
+                    subscribeToAllTopic()
                 }
             } else {
                 if (response == null) {
@@ -244,6 +168,16 @@ class MainActivity : AppCompatActivity(),
                     showSignInErrorDialog(R.string.message_unknown)
                 }
             }
+        }
+    }
+
+    private fun subscribeToAllTopic() {
+        val uid = FirebaseAuth.getInstance().uid
+        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener {snapshot ->
+            for (document in snapshot) {
+                FirebaseMessaging.getInstance().subscribeToTopic(document.id)
+            }
+
         }
     }
 
@@ -259,7 +193,6 @@ class MainActivity : AppCompatActivity(),
 
         firestore.collection("users").document(uid).set(user)
     }
-
 
     override fun onRoomSelected(room: DocumentSnapshot) {
         // Go to the details page for the selected room
@@ -304,7 +237,7 @@ class MainActivity : AppCompatActivity(),
 
     companion object {
 
-        private const val TAG = "MainActivity"
+        const val TAG = "MainActivity"
 
         private const val RC_SIGN_IN = 9001
 
