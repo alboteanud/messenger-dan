@@ -1,27 +1,21 @@
 package com.craiovadata.android.messenger
 
 import android.app.Activity
-import android.app.SearchManager
 import android.content.Intent
-import android.database.MatrixCursor
 import android.os.Bundle
-import android.provider.BaseColumns
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
-import androidx.cursoradapter.widget.CursorAdapter
-import androidx.cursoradapter.widget.SimpleCursorAdapter
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
-import com.craiovadata.android.messenger.model.User
+import com.craiovadata.android.messenger.util.DbUtil.subscribeToAllTopic
+import com.craiovadata.android.messenger.util.DbUtil.unsubscribeAllTopics
+import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
-import com.craiovadata.android.messenger.util.Util.getKeywords
 import com.craiovadata.android.messenger.util.UtilUI.setSearch
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
@@ -29,9 +23,10 @@ import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.*
-import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
@@ -122,7 +117,7 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_sign_out -> {
-                unsubscribeAllTopics()
+                unsubscribeAllTopics(firestore)
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
             }
@@ -131,16 +126,6 @@ class MainActivity : AppCompatActivity(),
             }
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    private fun unsubscribeAllTopics() {
-        val uid = FirebaseAuth.getInstance().uid
-        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener {snapshot ->
-            for (document in snapshot) {
-                FirebaseMessaging.getInstance().unsubscribeFromTopic(document.id)
-            }
-
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -153,10 +138,10 @@ class MainActivity : AppCompatActivity(),
                 // Successfully signed in
                 val firebaseUser = FirebaseAuth.getInstance().currentUser
                 if (firebaseUser != null) {
-                    writeNewUser(firebaseUser)
+                    writeNewUser(firestore, firebaseUser)
                     initRoomAdapter()
                     adapter.startListening()
-                    subscribeToAllTopic()
+                    subscribeToAllTopic(firestore)
                 }
             } else {
                 if (response == null) {
@@ -169,29 +154,6 @@ class MainActivity : AppCompatActivity(),
                 }
             }
         }
-    }
-
-    private fun subscribeToAllTopic() {
-        val uid = FirebaseAuth.getInstance().uid
-        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener {snapshot ->
-            for (document in snapshot) {
-                FirebaseMessaging.getInstance().subscribeToTopic(document.id)
-            }
-
-        }
-    }
-
-    private fun writeNewUser(firebaseUser: FirebaseUser) {
-
-        val email = firebaseUser.email.toString()
-        val displayName = firebaseUser.displayName.toString()
-
-        val keywords = getKeywords(email, displayName)
-
-        val user = User(email, displayName, firebaseUser.photoUrl.toString(), keywords)
-        val uid = firebaseUser.uid
-
-        firestore.collection("users").document(uid).set(user)
     }
 
     override fun onRoomSelected(room: DocumentSnapshot) {

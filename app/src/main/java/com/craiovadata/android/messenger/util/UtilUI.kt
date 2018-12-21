@@ -3,7 +3,6 @@ package com.craiovadata.android.messenger.util
 
 import android.app.Activity
 import android.app.SearchManager
-import android.content.Context
 import android.content.Intent
 import android.database.MatrixCursor
 import android.provider.BaseColumns
@@ -14,6 +13,7 @@ import androidx.cursoradapter.widget.CursorAdapter
 import androidx.cursoradapter.widget.SimpleCursorAdapter
 import com.craiovadata.android.messenger.MainActivity
 import com.craiovadata.android.messenger.MessagesActivity
+import com.craiovadata.android.messenger.model.MyCursorAdapter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QuerySnapshot
 
@@ -22,16 +22,19 @@ object UtilUI{
     fun setSearch(activity: Activity, searchItem: MenuItem?) {
 
         val form = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
-        val cursorAdapter: CursorAdapter = SimpleCursorAdapter(activity,
+        val cursorAdapter1: CursorAdapter = SimpleCursorAdapter(activity,
                 android.R.layout.simple_list_item_1,
                 null,
                 form,
                 intArrayOf(android.R.id.text1),
                 0)
+
+        val myCursorAdapter: MyCursorAdapter = MyCursorAdapter(activity, null)
         var users: QuerySnapshot? = null
 
         val searchView = searchItem?.actionView as SearchView
-        searchView.suggestionsAdapter = cursorAdapter
+//        searchView.suggestionsAdapter = cursorAdapter
+        searchView.suggestionsAdapter = myCursorAdapter
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
@@ -59,18 +62,21 @@ object UtilUI{
                 val columns = arrayOf(
                         BaseColumns._ID,
                         SearchManager.SUGGEST_COLUMN_TEXT_1,
-                        SearchManager.SUGGEST_COLUMN_INTENT_DATA
+                        SearchManager.SUGGEST_COLUMN_INTENT_DATA,
+                        "photoUrl"
                 )
 
                 val cursor = MatrixCursor(columns)
                 for (i in 0 until users.size()) {
                     val name = users.elementAt(i)["name"]
-                    val tmp = arrayOf(Integer.toString(i), name, name)
+                    val photoUrl = users.elementAt(i)["photoUrl"]
+                    val tmp = arrayOf(Integer.toString(i), name, name, photoUrl)
                     cursor.addRow(tmp)
 
                 }
 
-                cursorAdapter.swapCursor(cursor)
+//                cursorAdapter.swapCursor(cursor)
+                myCursorAdapter.swapCursor(cursor)
             }
 
             override fun onQueryTextSubmit(query: String): Boolean {

@@ -5,30 +5,18 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.craiovadata.android.messenger.MainActivity
 import com.craiovadata.android.messenger.MessagesActivity
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.util.ForegroundBackgroundListener
-import com.craiovadata.android.messenger.util.ForegroundBackgroundListener.Companion.active
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import android.text.method.TextKeyListener.clear
-import android.graphics.Bitmap
-import com.bumptech.glide.request.FutureTarget
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
