@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/messageItemImageView"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="8dp"
+        tools:src="@drawable/ic_person_black_24dp" />
+
+    <View
+        android:id="@+id/emptySpace"
+        android:layout_width="0dp"
+        android:layout_height="10dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@+id/messageItemImageView"
+        tools:background="#ccc"
+        tools:visibility="visible" />
+
+    <!--<TextView-->
+    <!--android:id="@+id/ratingItemDate"-->
+    <!--style="@style/AppTheme.Body1"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:textColor="@color/greySecondary"-->
+    <!--tools:text="9/27/2017" />-->
+
+
+    <TextView
+        android:id="@+id/messageItemText"
+        style="@style/AppTheme.Body1"
+        android:layout_marginStart="8dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxWidth="280dp"
+        tools:text="I thought it was pretty great! fhihdfdhfkashdfkhjfhdkjhfhd " />
+
+    <!--<View-->
+    <!--style="@style/AppTheme.Divider"-->
+    <!--android:layout_below="@id/ratingItemText"-->
+    <!--android:layout_marginTop="16dp"-->
+    <!--android:layout_marginBottom="8dp"/>-->
+</LinearLayout>

@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/toolbar"
         android:background="@android:color/white"
-        tools:listitem="@layout/item_restaurant" />
+        tools:listitem="@layout/item_room" />
 
     <!-- Shadow below toolbar -->
     <View

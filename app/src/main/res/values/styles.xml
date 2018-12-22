@@ -13,13 +13,12 @@
         <item name="android:textColorSecondary">@color/greySecondary</item>
 
         <item name="android:actionOverflowButtonStyle">@style/AppTheme.Overflow</item>
+
     </style>
 
-    <style name="AppTheme.Activity" parent="AppTheme" />
+    <style name="AppTheme.Activity" parent="AppTheme">
 
-    <!-- Dark Buttons -->
-
-    <!-- Light EditTexts -->
+    </style>
 
     <style name="AppTheme.Overflow" parent="Base.Widget.AppCompat.ActionButton.Overflow">
         <item name="android:padding">0dp</item>

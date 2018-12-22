@@ -41,6 +41,7 @@ class MainActivity : AppCompatActivity(),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        toolbar.logo = null
 
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
@@ -56,13 +57,13 @@ class MainActivity : AppCompatActivity(),
     private fun initRoomAdapter() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
 
-        toolbar.title = user.displayName
+        toolbar.title = user.email
 
         query = firestore.collection("users").document(user.uid).collection("rooms")
                 .orderBy("lastMsgTime", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
-        adapter = object : RoomAdapter(query, this@MainActivity) {
+        adapter = object : RoomAdapter(query, this@MainActivity, user.displayName) {
             override fun onDataChanged() {
                 // Show/hide content if the query returns empty.
                 if (itemCount == 0) {

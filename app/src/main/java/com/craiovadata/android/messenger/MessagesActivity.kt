@@ -16,31 +16,30 @@ import com.craiovadata.android.messenger.util.DbUtil.addMessage
 import com.craiovadata.android.messenger.util.DbUtil.getRoomsRef
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
-import kotlinx.android.synthetic.main.activity_conversation.*
+import kotlinx.android.synthetic.main.activity_messeges.*
 
 class MessagesActivity : AppCompatActivity(),
         MessageDialogFragment.MsgListener {
 
     private var messageDialog: MessageDialogFragment? = null
-    private lateinit var firestore: FirebaseFirestore
     private lateinit var roomID: String
     private lateinit var messageAdapter: MessageAdapter
     private var room: Room? = null
-    private lateinit var uid: String
+    private lateinit var user: FirebaseUser
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_conversation)
-        firestore = FirebaseFirestore.getInstance()
-        uid = FirebaseAuth.getInstance().currentUser!!.uid
+        setContentView(R.layout.activity_messeges)
+        user = FirebaseAuth.getInstance().currentUser!!
 
         if (intent.hasExtra(KEY_ROOM_ID)) {
             roomID = intent.extras?.getString(KEY_ROOM_ID)!!
             fetchRoomAndUpdateHead(roomID)
-            initMsgList(roomID)
+            initMsgList(roomID, user)
             FirebaseMessaging.getInstance().subscribeToTopic(roomID)
         } else if (intent.hasExtra(KEY_USER_ID)) {
             val palUid = intent.extras?.getString(KEY_USER_ID)!!
@@ -54,7 +53,7 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun fetchRoomAndUpdateHead(roomID: String) {
-        getRoomsRef(uid).document(roomID).get().addOnSuccessListener { snapshot ->
+        getRoomsRef(user.uid).document(roomID).get().addOnSuccessListener { snapshot ->
             if (snapshot != null) {
                 room = snapshot.toObject(Room::class.java)
                 initHeaderUI(room)
@@ -63,7 +62,7 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun getRoom(palUid: String) {
-        getRoomsRef(uid).whereEqualTo("palId", palUid).limit(1).get()
+        getRoomsRef(user.uid).whereEqualTo(PAL_ID, palUid).limit(1).get()
                 .addOnSuccessListener { snapshot ->
                     if (snapshot != null && !snapshot.isEmpty) {
                         val document = snapshot.documents[0]
@@ -72,23 +71,23 @@ class MessagesActivity : AppCompatActivity(),
                         initHeaderUI(room)
                     } else {
                         Log.d(TAG, "No such document. Creating new room.")
-                        roomID = getRoomsRef(uid).document().id
-                        setNewRoom(roomID, palUid, uid) // incl. updateHeadUI
-                        setNewRoom(roomID, uid, palUid)
+                        roomID = getRoomsRef(user.uid).document().id
+                        setNewRoom(roomID, palUid, user.uid) // incl. updateHeadUI
+                        setNewRoom(roomID, user.uid, palUid)
                     }
-                    initMsgList(roomID)
+                    initMsgList(roomID, user)
                 }
 
     }
 
     private fun setNewRoom(roomID: String, sourceUid: String, destUid: String) {
-        firestore.document("${USERS}/${sourceUid}").get()
+        FirebaseFirestore.getInstance().document("${USERS}/${sourceUid}").get()
                 .addOnSuccessListener { snapshot ->
                     if (snapshot != null) {
                         val user = snapshot.toObject(User::class.java)
                         if (user != null) {
                             val newRoom = Room(user.name, snapshot.id, user.photoUrl)
-                            if (destUid == uid) {
+                            if (destUid == this.user.uid) {
                                 room = newRoom
                                 initHeaderUI(room)
                                 FirebaseMessaging.getInstance().subscribeToTopic(roomID)
@@ -102,17 +101,17 @@ class MessagesActivity : AppCompatActivity(),
     private fun initHeaderUI(room: Room?) {
         restaurantName.text = room?.palName
         val photoUrl = room?.palPhotoUrl
-        Glide.with(restaurantImage.context)
+        Glide.with(palImage.context)
                 .load(photoUrl)
-                .into(restaurantImage)
+                .into(palImage)
     }
 
-    private fun initMsgList(roomID: String) {
-        val query = getRoomsRef(uid).document(roomID).collection(MESSAGES)
+    private fun initMsgList(roomID: String, user: FirebaseUser) {
+        val query = getRoomsRef(user.uid).document(roomID).collection(MESSAGES)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(50)
 
-        messageAdapter = object : MessageAdapter(query) {
+        messageAdapter = object : MessageAdapter(query, user) {
             override fun onDataChanged() {
                 if (itemCount == 0) {
                     recyclerRatings.visibility = View.VISIBLE
@@ -135,7 +134,7 @@ class MessagesActivity : AppCompatActivity(),
 
     override fun onMessage(message: Message) {
         // In a transaction, add the new rating and update the aggregate totals
-        addMessage(firestore, roomID, message, room?.palId, uid)
+        addMessage(roomID, message, room?.palId, user.uid)
                 .addOnSuccessListener(this) {
                     Log.d(TAG, "Rating added")
 
@@ -191,5 +190,6 @@ class MessagesActivity : AppCompatActivity(),
         const val KEY_USER_ID = "key_user_id"
         const val USERS = "users"
         const val MESSAGES = "messages"
+        const val PAL_ID = "palId"
     }
 }

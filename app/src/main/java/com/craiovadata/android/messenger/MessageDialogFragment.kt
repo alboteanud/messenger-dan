@@ -9,8 +9,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.craiovadata.android.messenger.model.Message
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.android.synthetic.main.dialog_rating.*
-import kotlinx.android.synthetic.main.dialog_rating.view.*
+import kotlinx.android.synthetic.main.dialog_message.*
+import kotlinx.android.synthetic.main.dialog_message.view.*
 
 /**
  * Dialog Fragment containing rating form.
@@ -29,7 +29,7 @@ class MessageDialogFragment : DialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val v = inflater.inflate(R.layout.dialog_rating, container, false)
+        val v = inflater.inflate(R.layout.dialog_message, container, false)
 
         v.restaurantFormButton.setOnClickListener { onSubmitClicked() }
         v.restaurantFormCancel.setOnClickListener { onCancelClicked() }

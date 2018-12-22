@@ -45,10 +45,10 @@ object DbUtil {
         firestore.collection("users").document(uid).set(user)
     }
 
-    fun addMessage(firestore: FirebaseFirestore, roomID: String, message: Message, palId: String?, uid: String): Task<Void> {
+    fun addMessage(roomID: String, message: Message, palId: String?, uid: String): Task<Void> {
 
         val msgRef = getRoomsRef(uid).document(roomID).collection(MESSAGES).document()
-        val batch = firestore.batch()
+        val batch = FirebaseFirestore.getInstance().batch()
 
         batch.set(msgRef, message)
         batch.set(getRoomsRef(palId!!).document(roomID).collection(MESSAGES).document(msgRef.id), message)

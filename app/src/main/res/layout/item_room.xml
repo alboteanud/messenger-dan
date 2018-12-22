@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/roomItemImage"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="#ccc"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_person_black_24dp" />
+
+    <TextView
+        android:id="@+id/roomName"
+        style="@style/AppTheme.Body1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/roomItemImage"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="0dp"
+        android:layout_toRightOf="@+id/roomItemImage"
+        android:ellipsize="end"
+        android:maxLines="1"
+        app:layout_constraintStart_toEndOf="@+id/roomItemImage"
+        app:layout_constraintTop_toTopOf="@+id/roomItemImage"
+        tools:text="Anca Elena" />
+
+
+    <TextView
+        android:id="@+id/author"
+        style="@style/AppTheme.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/lastMsg"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/greySecondary"
+        app:layout_constraintStart_toStartOf="@+id/roomName"
+        app:layout_constraintTop_toBottomOf="@+id/roomName"
+        tools:text="Dan Alboteanu" />
+
+
+    <TextView
+        android:id="@+id/lastMsg"
+        style="@style/AppTheme.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@+id/roomName"
+        android:layout_marginStart="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:scrollHorizontally="true"
+        android:textColor="@color/greySecondary"
+        app:layout_constraintBottom_toBottomOf="@+id/author"
+        app:layout_constraintStart_toEndOf="@+id/author"
+        app:layout_constraintTop_toTopOf="@+id/author"
+        tools:text="hello there! " />
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
