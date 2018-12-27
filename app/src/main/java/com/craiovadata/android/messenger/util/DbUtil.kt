@@ -5,6 +5,7 @@ import android.content.Context.MODE_PRIVATE
 import com.craiovadata.android.messenger.MessagesActivity
 import com.craiovadata.android.messenger.MessagesActivity.Companion.MESSAGES
 import com.craiovadata.android.messenger.model.Message
+import com.craiovadata.android.messenger.model.SearchedUser
 import com.craiovadata.android.messenger.model.User
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseUser
@@ -35,20 +36,17 @@ object DbUtil {
         val displayName = firebaseUser.displayName.toString()
         val photoUrl = firebaseUser.photoUrl.toString()
 
-
         val user = User(email, displayName, photoUrl)
         val uid = firebaseUser.uid
         val batch = db.batch()
         val usrRef = db.collection("users").document(uid)
         batch.set(usrRef, user)
 
+        // TODO build keywords in the cloud (functions)
         val keywords = Util.getKeywords(email, displayName)
         val keywordsRef = db.document("userKeywords/${uid}")
-        val map = HashMap<String, Any>()
-        map.put("keywords", keywords)
-        map.put("name", displayName)
-        map.put("photoUrl", photoUrl)
-        batch.set(keywordsRef, map)
+        val searchUser = SearchedUser(displayName, photoUrl, keywords)
+        batch.set(keywordsRef, searchUser)
 
         val registrationToken = getRegistrationToken(context)
         if (registrationToken != null) {
@@ -56,7 +54,6 @@ object DbUtil {
             val regTokenObj = HashMap<String, Any>()
             batch.set(ref, regTokenObj, SetOptions.merge())
         }
-
 
         batch.commit()
     }

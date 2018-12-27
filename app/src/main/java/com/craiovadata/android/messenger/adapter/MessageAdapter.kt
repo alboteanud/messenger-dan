@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * RecyclerView adapter for a list of [Message].
+ * RecyclerView roomAdapter for a list of [Message].
  */
 open class MessageAdapter(query: Query, private val user: FirebaseUser) : FirestoreAdapter<MessageAdapter.ViewHolder>(query) {
 

@@ -15,7 +15,6 @@ import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
-import com.craiovadata.android.messenger.util.UtilUI.setSearch
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -29,13 +28,13 @@ import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
-        RoomAdapter.OnRoomSelectedListener, FirebaseAuth.AuthStateListener {
-
+        RoomAdapter.OnRoomSelectedListener,
+        FirebaseAuth.AuthStateListener {
 
 
     lateinit var firestore: FirebaseFirestore
     lateinit var query: Query
-    lateinit var adapter: RoomAdapter
+    lateinit var roomAdapter: RoomAdapter
     private lateinit var viewModel: MainActivityViewModel
     lateinit var auth: FirebaseAuth
 
@@ -64,7 +63,7 @@ class MainActivity : AppCompatActivity(),
                 .orderBy("lastMsgTime", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
-        adapter = object : RoomAdapter(query, this@MainActivity, auth.currentUser?.displayName) {
+        roomAdapter = object : RoomAdapter(query, this@MainActivity, auth.currentUser?.displayName) {
             override fun onDataChanged() {
                 // Show/hide content if the query returns empty.
                 if (itemCount == 0) {
@@ -84,7 +83,8 @@ class MainActivity : AppCompatActivity(),
         }
 
         recyclerRestaurants.layoutManager = LinearLayoutManager(this)
-        recyclerRestaurants.adapter = adapter
+        recyclerRestaurants.adapter = roomAdapter
+
 
     }
 
@@ -100,27 +100,29 @@ class MainActivity : AppCompatActivity(),
         auth.addAuthStateListener(this)
 
         // Start listening for Firestore updates
-        if (::adapter.isInitialized) // maybe auth = null so adapter not initialised
-            adapter.startListening()
+        if (::roomAdapter.isInitialized) // maybe auth = null so roomAdapter not initialised
+            roomAdapter.startListening()
 
     }
 
     public override fun onStop() {
         super.onStop()
         auth.removeAuthStateListener(this)
-        if (::adapter.isInitialized) // maybe auth = null so adapter not initialised
-            adapter.stopListening()
+        if (::roomAdapter.isInitialized) // maybe auth = null so roomAdapter not initialised
+            roomAdapter.stopListening()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        setSearch(this@MainActivity, menu.findItem(R.id.action_search))
-        return true
-//        return super.onCreateOptionsMenu(menu)
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_search -> {
+                val intent = Intent(this@MainActivity, SearchActivity::class.java)
+                startActivity(intent)
+            }
             R.id.menu_sign_out -> {
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
@@ -128,6 +130,7 @@ class MainActivity : AppCompatActivity(),
             R.id.menu_test -> {
 
             }
+
         }
         return super.onOptionsItemSelected(item)
     }
@@ -144,7 +147,7 @@ class MainActivity : AppCompatActivity(),
                 if (firebaseUser != null) {
                     writeNewUser(this@MainActivity, firebaseUser)
                     initRoomAdapter()
-                    adapter.startListening()
+                    roomAdapter.startListening()
                 }
             } else {
                 if (response == null) {

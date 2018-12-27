@@ -28,16 +28,20 @@ object Util {
 
     // add word and derivatives to list
     private fun addWordDerivToList(word: String, keywords: ArrayList<String>) {
-        if (word.length >= 4) {
-            if (!keywords.contains(word))
-                keywords.add(word)
-            val endLettersIndex = if (word.length > 7) 7 else word.length - 1
-            for (i in 4..endLettersIndex) {
-                val substr = word.substring(0, i)
-                if (!keywords.contains(substr))
-                    keywords.add(substr)
-            }
+        if (word.length < 4) return
+
+        if (!keywords.contains(word))
+            keywords.add(word)
+
+        val endLettersIndex =
+                if (word.length > 7) 7
+                else word.length - 1
+        for (i in 4..endLettersIndex) {
+            val substr = word.substring(0, i)
+            if (!keywords.contains(substr))
+                keywords.add(substr)
         }
+
     }
 
     private fun usernameFromEmail(email: String): String {

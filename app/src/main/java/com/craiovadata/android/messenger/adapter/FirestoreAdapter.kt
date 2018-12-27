@@ -7,7 +7,7 @@ import com.google.firebase.firestore.EventListener
 import java.util.*
 
 /**
- * RecyclerView adapter for displaying the results of a Firestore [Query].
+ * RecyclerView roomAdapter for displaying the results of a Firestore [Query].
  *
  * Note that this class forgoes some efficiency to gain simplicity. For example, the result of
  * [DocumentSnapshot.toObject] is not cached so the same object may be deserialized

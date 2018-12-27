@@ -12,7 +12,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_room.view.*
 
 /**
- * RecyclerView adapter for a list of rooms.
+ * RecyclerView roomAdapter for a list of rooms.
  */
 open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListener, private val userName: String?) :
         FirestoreAdapter<RoomAdapter.ViewHolder>(query) {
