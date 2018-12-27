@@ -11,7 +11,7 @@ import java.util.*
  *
  * Note that this class forgoes some efficiency to gain simplicity. For example, the result of
  * [DocumentSnapshot.toObject] is not cached so the same object may be deserialized
- * many times as the user scrolls.
+ * many times as the auth scrolls.
  */
 abstract class FirestoreAdapter<VH : RecyclerView.ViewHolder>(private var query: Query?) :
         RecyclerView.Adapter<VH>(),

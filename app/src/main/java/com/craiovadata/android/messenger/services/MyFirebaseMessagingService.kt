@@ -16,6 +16,10 @@ import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.util.ForegroundBackgroundListener
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -34,7 +38,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // here in onMessageReceived whether the app is in the foreground or background. Data messages are the type
         // traditionally used with GCM. Notification messages are only received here in onMessageReceived when the app
         // is in the foreground. When the app is in the background an automatically generated notification is displayed.
-        // When the user taps on the notification they are returned to the app. Messages containing both notification
+        // When the auth taps on the notification they are returned to the app. Messages containing both notification
         // and data payloads are treated as notification messages. The Firebase console always sends notification
         // messages. For more see: https://firebase.google.com/docs/cloud-messaging/concept-options
         // [END_EXCLUDE]
@@ -79,10 +83,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // If you want to send messages to this application instance or
         // manage this apps subscriptions on the server side, send the
         // Instance ID token to your app server.
-//        sendRegistrationToServer(token)
+        sendRegistrationToServer(token)
+        saveRegistrationLocally(token)
+
 
     }
-    // [END on_new_token]
+
+    private fun saveRegistrationLocally(token: String?) {
+        getSharedPreferences("_", MODE_PRIVATE).edit().putString("token", token).apply()
+    }
 
     /**
      * Schedule a job using FirebaseJobDispatcher.
@@ -115,12 +124,21 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     /**
      * Persist token to third-party servers.
      *
-     * Modify this method to associate the user's FCM InstanceID token with any server-side account
+     * Modify this method to associate the auth's FCM InstanceID token with any server-side account
      * maintained by your application.
      *
      * @param token The new token.
      */
     fun sendRegistrationToServer(token: String?) {
+        if (token == null)
+            return
+        val user: FirebaseUser = FirebaseAuth.getInstance().currentUser ?: return
+
+        val tokensRef = FirebaseFirestore.getInstance().document("users/${user.uid}/tokens/${token}")
+        val dataTk = HashMap<String, Any>()
+//        dataTk[token] = true
+        tokensRef.set(dataTk, SetOptions.merge())
+
     }
 
     /**

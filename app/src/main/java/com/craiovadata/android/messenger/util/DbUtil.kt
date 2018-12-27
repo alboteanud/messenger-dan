@@ -1,48 +1,64 @@
 package com.craiovadata.android.messenger.util
 
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import com.craiovadata.android.messenger.MessagesActivity
 import com.craiovadata.android.messenger.MessagesActivity.Companion.MESSAGES
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.User
 import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.iid.FirebaseInstanceId
+
 
 object DbUtil {
-    fun unsubscribeAllTopics(firestore: FirebaseFirestore) {
-        val uid = FirebaseAuth.getInstance().uid
-        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener { snapshot ->
-            for (document in snapshot) {
-                FirebaseMessaging.getInstance().unsubscribeFromTopic(document.id)
-            }
 
+    fun removeRegistration(context: Context, uid: String?) {
+        val firestore = FirebaseFirestore.getInstance()
+        val tokensRef = firestore.collection("users/${uid}/tokens")
+        val token = getRegistrationToken(context)
+        if (token != null) {
+            tokensRef.document(token).delete()
         }
     }
 
-    fun subscribeToAllTopic(firestore: FirebaseFirestore) {
-        val uid = FirebaseAuth.getInstance().uid
-        firestore.collection("users/${uid}/rooms").get().addOnSuccessListener { snapshot ->
-            for (document in snapshot) {
-                FirebaseMessaging.getInstance().subscribeToTopic(document.id)
-            }
-
-        }
+    fun getRegistrationToken(context: Context): String? {
+        return context.getSharedPreferences("_", MODE_PRIVATE).getString("token", FirebaseInstanceId.getInstance().token)
     }
 
-    fun writeNewUser(firestore: FirebaseFirestore, firebaseUser: FirebaseUser) {
-
+    fun writeNewUser(context: Context, firebaseUser: FirebaseUser) {
+        val db = FirebaseFirestore.getInstance()
         val email = firebaseUser.email.toString()
         val displayName = firebaseUser.displayName.toString()
+        val photoUrl = firebaseUser.photoUrl.toString()
+
+
+        val user = User(email, displayName, photoUrl)
+        val uid = firebaseUser.uid
+        val batch = db.batch()
+        val usrRef = db.collection("users").document(uid)
+        batch.set(usrRef, user)
 
         val keywords = Util.getKeywords(email, displayName)
+        val keywordsRef = db.document("userKeywords/${uid}")
+        val map = HashMap<String, Any>()
+        map.put("keywords", keywords)
+        map.put("name", displayName)
+        map.put("photoUrl", photoUrl)
+        batch.set(keywordsRef, map)
 
-        val user = User(email, displayName, firebaseUser.photoUrl.toString(), keywords)
-        val uid = firebaseUser.uid
+        val registrationToken = getRegistrationToken(context)
+        if (registrationToken != null) {
+            val ref = db.document("userTokens/${uid}")
+            val regTokenObj = HashMap<String, Any>()
+            batch.set(ref, regTokenObj, SetOptions.merge())
+        }
 
-        firestore.collection("users").document(uid).set(user)
+
+        batch.commit()
     }
 
     fun addMessage(roomID: String, message: Message, palId: String?, uid: String): Task<Void> {

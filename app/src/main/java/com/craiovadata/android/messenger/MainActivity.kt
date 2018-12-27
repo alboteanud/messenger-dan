@@ -12,8 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
-import com.craiovadata.android.messenger.util.DbUtil.subscribeToAllTopic
-import com.craiovadata.android.messenger.util.DbUtil.unsubscribeAllTopics
+import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.util.UtilUI.setSearch
@@ -30,12 +29,15 @@ import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
-        RoomAdapter.OnRoomSelectedListener {
+        RoomAdapter.OnRoomSelectedListener, FirebaseAuth.AuthStateListener {
+
+
 
     lateinit var firestore: FirebaseFirestore
     lateinit var query: Query
     lateinit var adapter: RoomAdapter
     private lateinit var viewModel: MainActivityViewModel
+    lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,27 +45,26 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
         toolbar.logo = null
 
-
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
 //        FirebaseFirestore.setLoggingEnabled(true)
         firestore = FirebaseFirestore.getInstance()
 
+        auth = FirebaseAuth.getInstance()
         initRoomAdapter()
 
         checkPlayServices(this)
     }
 
     private fun initRoomAdapter() {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
 
-        toolbar.title = user.email
+        toolbar.title = auth.currentUser?.email
 
-        query = firestore.collection("users").document(user.uid).collection("rooms")
+        query = firestore.collection("users/${auth.currentUser?.uid}/rooms")
                 .orderBy("lastMsgTime", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
-        adapter = object : RoomAdapter(query, this@MainActivity, user.displayName) {
+        adapter = object : RoomAdapter(query, this@MainActivity, auth.currentUser?.displayName) {
             override fun onDataChanged() {
                 // Show/hide content if the query returns empty.
                 if (itemCount == 0) {
@@ -96,15 +97,18 @@ class MainActivity : AppCompatActivity(),
             return
         }
 
+        auth.addAuthStateListener(this)
+
         // Start listening for Firestore updates
-        if (::adapter.isInitialized) // maybe user = null so adapter not initialised
+        if (::adapter.isInitialized) // maybe auth = null so adapter not initialised
             adapter.startListening()
 
     }
 
     public override fun onStop() {
         super.onStop()
-        if (::adapter.isInitialized) // maybe user = null so adapter not initialised
+        auth.removeAuthStateListener(this)
+        if (::adapter.isInitialized) // maybe auth = null so adapter not initialised
             adapter.stopListening()
     }
 
@@ -118,7 +122,6 @@ class MainActivity : AppCompatActivity(),
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_sign_out -> {
-                unsubscribeAllTopics(firestore)
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
             }
@@ -139,10 +142,9 @@ class MainActivity : AppCompatActivity(),
                 // Successfully signed in
                 val firebaseUser = FirebaseAuth.getInstance().currentUser
                 if (firebaseUser != null) {
-                    writeNewUser(firestore, firebaseUser)
+                    writeNewUser(this@MainActivity, firebaseUser)
                     initRoomAdapter()
                     adapter.startListening()
-                    subscribeToAllTopic(firestore)
                 }
             } else {
                 if (response == null) {
@@ -168,6 +170,12 @@ class MainActivity : AppCompatActivity(),
 
     private fun shouldStartSignIn(): Boolean {
         return !viewModel.isSigningIn && FirebaseAuth.getInstance().currentUser == null
+    }
+
+    override fun onAuthStateChanged(auth: FirebaseAuth) {
+        if (auth.currentUser == null) {
+            removeRegistration(this@MainActivity, this.auth.uid)
+        }
     }
 
     private fun startSignIn() {

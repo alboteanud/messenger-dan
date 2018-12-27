@@ -1,7 +1,6 @@
 package com.craiovadata.android.messenger.model
 
 //import android.widget.CursorAdapter
-import android.app.SearchManager
 import android.content.Context
 import android.database.Cursor
 import android.view.LayoutInflater
@@ -13,15 +12,16 @@ import androidx.cursoradapter.widget.CursorAdapter
 import com.craiovadata.android.messenger.R
 
 
-class MyCursorAdapter(val context: Context, cursor: Cursor?) : CursorAdapter(context, cursor, true) {
+class MyCursorAdapter(val context: Context, cursor: Cursor) : CursorAdapter(context, cursor, true) {
+//class MyCursorAdapter(val context: Context, cursor: Cursor?) : SimpleCursorAdapter(context, R.layout.search_item, cursor, null, intArrayOf(R.id.textSearch), 0) {
 
     override fun newView(context: Context?, cursor: Cursor?, parent: ViewGroup?): View {
         return LayoutInflater.from(context).inflate(R.layout.search_item, parent, false)
     }
 
-    override fun bindView(view: View?, context: Context?, cursor: Cursor?) {
+    override fun bindView(view: View?, context: Context?, cursor: Cursor) {
         val tvText = view?.findViewById(R.id.textSearch) as TextView
-        val text = getString(cursor, SearchManager.SUGGEST_COLUMN_TEXT_1)
+        val text = getString(cursor, "name")
         tvText.text = text
 
         val photoUrl = getString(cursor, "photoUrl")
@@ -33,8 +33,8 @@ class MyCursorAdapter(val context: Context, cursor: Cursor?) : CursorAdapter(con
                 .into(imageView)
     }
 
-    private fun getString(cursor: Cursor?, key: String): String {
-        return cursor!!.getString(cursor.getColumnIndexOrThrow(key))
+    private fun getString(cursor: Cursor, key: String): String {
+        return cursor.getString(cursor.getColumnIndexOrThrow(key))
     }
 
 

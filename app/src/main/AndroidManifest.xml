@@ -27,10 +27,6 @@
             android:parentActivityName="com.craiovadata.android.messenger.MainActivity"
             android:theme="@style/AppTheme.Activity">
 
-            <!--<meta-data-->
-            <!--android:name="android.support.PARENT_ACTIVITY"-->
-            <!--android:value="com.craiovadata.android.messenger.MainActivity" />-->
-
         </activity>
 
         <service
