@@ -1,7 +1,9 @@
 package com.craiovadata.android.messenger.util
 
 import android.app.Activity
+import android.content.Context
 import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 
@@ -82,5 +84,13 @@ object Util {
     }
 
     private const val PLAY_SERVICES_RESOLUTION_REQUEST = 9000
+
+    private fun hideKeyboard(activity: Activity) {
+        val view = activity.currentFocus
+        if (view != null) {
+            (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                    .hideSoftInputFromWindow(view.windowToken, 0)
+        }
+    }
 
 }

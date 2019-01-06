@@ -8,6 +8,7 @@ import android.text.TextWatcher
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
+import com.craiovadata.android.messenger.util.KEY_USER_ID
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -67,8 +68,8 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
     }
 
     override fun onUserSelected(documentSnapshot: DocumentSnapshot) {
-        val intent = Intent(this@SearchActivity, MessagesActivity::class.java)
-        intent.putExtra(MessagesActivity.KEY_USER_ID, documentSnapshot.id)
+        val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
+        intent.putExtra(KEY_USER_ID, documentSnapshot.id)
         startActivity(intent)
         overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
         finish()

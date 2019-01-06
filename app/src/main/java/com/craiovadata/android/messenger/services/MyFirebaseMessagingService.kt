@@ -11,9 +11,10 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
 import com.bumptech.glide.Glide
-import com.craiovadata.android.messenger.MessagesActivity
+import com.craiovadata.android.messenger.DetailsActivity
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.util.ForegroundBackgroundListener
+import com.craiovadata.android.messenger.util.KEY_ROOM_ID
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
 import com.google.firebase.auth.FirebaseAuth
@@ -147,9 +148,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      * @param messageBody FCM message body received.
      */
     private fun sendNotification(data: MutableMap<String, String>) {
-        val intent = Intent(this, MessagesActivity::class.java)
+        val intent = Intent(this, DetailsActivity::class.java)
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.putExtra(MessagesActivity.KEY_ROOM_ID, data["roomId"])
+        intent.putExtra(KEY_ROOM_ID, data["roomId"])
 
         val pendingIntent: PendingIntent? = TaskStackBuilder.create(this)
                 // add all of DetailsActivity's parents to the stack,

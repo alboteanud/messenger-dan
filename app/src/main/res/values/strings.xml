@@ -9,7 +9,7 @@
     <string name="cancel">Cancel</string>
     <string name="message_no_results">Oops, couldn\'t find any results\nthat matched your filter</string>
     <string name="message_no_reviews">Be the first to leave a review!</string>
-    <string name="hint_message">message</string>
+    <string name="hint_message">Write a message&#8230;</string>
     <string name="submit">Submit</string>
     <string name="add_message">Send message</string>
 
@@ -20,6 +20,7 @@
     <string name="option_exit">Exit</string>
     <string name="default_notification_channel_id">chanel_1</string>
     <string name="fcm_message">my content Title</string>
+    <string name="title_activity_record">RecordActivity</string>
 
 
 </resources>

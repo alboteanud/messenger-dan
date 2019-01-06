@@ -1,11 +1,8 @@
 package com.craiovadata.android.messenger
 
 //import android.app.TaskStackBuilder
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -13,20 +10,18 @@ import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.Room
 import com.craiovadata.android.messenger.model.User
+import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.addMessage
 import com.craiovadata.android.messenger.util.DbUtil.getRoomsRef
-import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
-import kotlinx.android.synthetic.main.activity_messeges.*
+import kotlinx.android.synthetic.main.activity_details.*
 
-class MessagesActivity : AppCompatActivity(),
-        MessageDialogFragment.MsgListener {
+class DetailsActivity : AppCompatActivity() {
 
-    private var messageDialog: MessageDialogFragment? = null
     private lateinit var roomID: String
     private lateinit var messageAdapter: MessageAdapter
     private var room: Room? = null
@@ -34,7 +29,7 @@ class MessagesActivity : AppCompatActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_messeges)
+        setContentView(R.layout.activity_details)
         user = FirebaseAuth.getInstance().currentUser!!
 
         if (intent.hasExtra(KEY_ROOM_ID)) {
@@ -47,10 +42,8 @@ class MessagesActivity : AppCompatActivity(),
             getRoom(palUid)
         }
 
-        messageDialog = MessageDialogFragment()
-
-        restaurantButtonBack.setOnClickListener { onBackArrowClicked() }
-        fabShowRatingDialog.setOnClickListener { onAddMessageClicked() }
+        buttonBack.setOnClickListener { onBackArrowClicked() }
+        sendButton.setOnClickListener { onMsgSubmitClicked() }
     }
 
     private fun fetchRoomAndUpdateHead(roomID: String) {
@@ -100,7 +93,7 @@ class MessagesActivity : AppCompatActivity(),
     }
 
     private fun initHeaderUI(room: Room?) {
-        restaurantName.text = room?.palName
+        conversationName.text = room?.palName
         val photoUrl = room?.palPhotoUrl
         Glide.with(palImage.context)
                 .load(photoUrl)
@@ -109,58 +102,30 @@ class MessagesActivity : AppCompatActivity(),
 
     private fun initMsgList(roomID: String, user: FirebaseUser) {
         val query = getRoomsRef(user.uid).document(roomID).collection(MESSAGES)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .limit(50)
+                .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
+                .limit(20)
 
-        messageAdapter = object : MessageAdapter(query, user) {
-            override fun onDataChanged() {
-                if (itemCount == 0) {
-                    recyclerRatings.visibility = View.VISIBLE
-                    viewEmptyRatings.visibility = View.VISIBLE
-                } else {
-                    recyclerRatings.visibility = View.VISIBLE
-                    viewEmptyRatings.visibility = View.GONE
-                }
-            }
-        }
-        recyclerRatings.layoutManager = LinearLayoutManager(this)
-        recyclerRatings.adapter = messageAdapter
-
+        messageAdapter = object : MessageAdapter(query, user) {}
+        val manager = LinearLayoutManager(this)
+        manager.reverseLayout = true
+        recyclerMsgs.layoutManager = manager
+        recyclerMsgs.adapter = messageAdapter
         messageAdapter.startListening()
     }
 
-    private fun onAddMessageClicked() {
-        messageDialog?.show(supportFragmentManager, MessageDialogFragment.TAG)
-    }
 
-    override fun onMessage(message: Message) {
-        // In a transaction, add the new rating and update the aggregate totals
+    private fun onMsgSubmitClicked() {
+        val message = Message(user, msgFormText.text.toString())
+        msgFormText.text = null
         addMessage(roomID, message, room?.palId, user.uid)
                 .addOnSuccessListener(this) {
-                    Log.d(TAG, "Rating added")
+                    Log.d(TAG, "Message added")
+//                    hideKeyboard()
+                    recyclerMsgs.smoothScrollToPosition(0)
 
-                    // Hide keyboard and scroll to top
-                    hideKeyboard()
-                    recyclerRatings.smoothScrollToPosition(0)
                 }
-                .addOnFailureListener(this) { e ->
-                    Log.w(TAG, "Add rating failed", e)
+                .addOnFailureListener(this) { e -> Log.w(TAG, "Add message failed", e) }
 
-                    // Show failure message and hide keyboard
-                    hideKeyboard()
-                    Snackbar.make(findViewById(android.R.id.content), "Failed to add rating",
-                            Snackbar.LENGTH_SHORT).show()
-                }
-
-    }
-
-
-    private fun hideKeyboard() {
-        val view = currentFocus
-        if (view != null) {
-            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                    .hideSoftInputFromWindow(view.windowToken, 0)
-        }
     }
 
     public override fun onStart() {
@@ -187,10 +152,11 @@ class MessagesActivity : AppCompatActivity(),
 
     companion object {
         private const val TAG = "RoomMessages"
-        const val KEY_ROOM_ID = "key_room_id"
-        const val KEY_USER_ID = "key_user_id"
-        const val USERS = "users"
-        const val MESSAGES = "messages"
-        const val PAL_ID = "palId"
+//        const val KEY_ROOM_ID = "key_room_id"
+//        const val KEY_USER_ID = "key_user_id"
+//        const val USERS = "users"
+//        const val MESSAGES = "messages"
+//        const val PAL_ID = "palId"
+//        const val TIMESTAMP = "timestamp"
     }
 }

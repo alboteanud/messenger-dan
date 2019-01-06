@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
+import com.craiovadata.android.messenger.util.KEY_ROOM_ID
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
@@ -31,8 +32,6 @@ class MainActivity : AppCompatActivity(),
         RoomAdapter.OnRoomSelectedListener,
         FirebaseAuth.AuthStateListener {
 
-
-    lateinit var firestore: FirebaseFirestore
     lateinit var query: Query
     lateinit var roomAdapter: RoomAdapter
     private lateinit var viewModel: MainActivityViewModel
@@ -45,21 +44,18 @@ class MainActivity : AppCompatActivity(),
         toolbar.logo = null
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-
 //        FirebaseFirestore.setLoggingEnabled(true)
-        firestore = FirebaseFirestore.getInstance()
 
         auth = FirebaseAuth.getInstance()
+        toolbar.title = auth.currentUser?.displayName
+
         initRoomAdapter()
 
         checkPlayServices(this)
     }
 
     private fun initRoomAdapter() {
-
-        toolbar.title = auth.currentUser?.email
-
-        query = firestore.collection("users/${auth.currentUser?.uid}/rooms")
+        query = FirebaseFirestore.getInstance().collection("users/${auth.currentUser?.uid}/rooms")
                 .orderBy("lastMsgTime", Query.Direction.DESCENDING)
                 .limit(LIMIT.toLong())
 
@@ -76,7 +72,6 @@ class MainActivity : AppCompatActivity(),
             }
 
             override fun onError(e: FirebaseFirestoreException) {
-                // Show a snackbar on errors
                 Snackbar.make(findViewById(android.R.id.content),
                         "Error: check logs for info.", Snackbar.LENGTH_LONG).show()
             }
@@ -85,13 +80,11 @@ class MainActivity : AppCompatActivity(),
         recyclerRestaurants.layoutManager = LinearLayoutManager(this)
         recyclerRestaurants.adapter = roomAdapter
 
-
     }
 
     public override fun onStart() {
         super.onStart()
 
-        // Start sign in if necessary
         if (shouldStartSignIn()) {
             startSignIn()
             return
@@ -99,7 +92,6 @@ class MainActivity : AppCompatActivity(),
 
         auth.addAuthStateListener(this)
 
-        // Start listening for Firestore updates
         if (::roomAdapter.isInitialized) // maybe auth = null so roomAdapter not initialised
             roomAdapter.startListening()
 
@@ -128,9 +120,8 @@ class MainActivity : AppCompatActivity(),
                 startSignIn()
             }
             R.id.menu_test -> {
-
+                startActivity(Intent(this@MainActivity, RecordActivity::class.java))
             }
-
         }
         return super.onOptionsItemSelected(item)
     }
@@ -163,10 +154,8 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onRoomSelected(room: DocumentSnapshot) {
-        // Go to the details page for the selected room
-        val intent = Intent(this, MessagesActivity::class.java)
-        intent.putExtra(MessagesActivity.KEY_ROOM_ID, room.reference.id)
-
+        val intent = Intent(this, DetailsActivity::class.java)
+        intent.putExtra(KEY_ROOM_ID, room.reference.id)
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }

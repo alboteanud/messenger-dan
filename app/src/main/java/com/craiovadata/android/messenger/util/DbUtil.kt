@@ -2,8 +2,6 @@ package com.craiovadata.android.messenger.util
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import com.craiovadata.android.messenger.MessagesActivity
-import com.craiovadata.android.messenger.MessagesActivity.Companion.MESSAGES
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.SearchedUser
 import com.craiovadata.android.messenger.model.User
@@ -78,7 +76,7 @@ object DbUtil {
 
     fun getRoomsRef(uid: String): CollectionReference {
         val firestore = FirebaseFirestore.getInstance()
-        return firestore.collection("${MessagesActivity.USERS}/${uid}/rooms")
+        return firestore.collection("${USERS}/${uid}/rooms")
     }
 
 }
