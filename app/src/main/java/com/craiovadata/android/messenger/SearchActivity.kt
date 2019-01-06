@@ -8,7 +8,9 @@ import android.text.TextWatcher
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
+import com.craiovadata.android.messenger.util.KEYWORDS
 import com.craiovadata.android.messenger.util.KEY_USER_ID
+import com.craiovadata.android.messenger.util.USER_KEYWORDS
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,17 +29,15 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
         editText.requestFocus()
         backBtn.setOnClickListener { onBackArrowClicked() }
 
-        searchRef = FirebaseFirestore.getInstance().collection("userKeywords")
+        searchRef = FirebaseFirestore.getInstance().collection(USER_KEYWORDS)
 
         searchAdapter = object : SearchAdapter(null, this@SearchActivity) {
             override fun onDataChanged() {
                 super.onDataChanged()
                 if (itemCount == 0) {
                     recyclerSearchedUsers.visibility = View.GONE
-//                    viewEmpty.visibility = View.VISIBLE
                 } else {
                     recyclerSearchedUsers.visibility = View.VISIBLE
-//                    viewEmpty.visibility = View.GONE
                 }
             }
         }
@@ -49,10 +49,9 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
 
     override fun afterTextChanged(s: Editable?) {
         val str = s.toString()
-//        Log.d(TAG, str)
         if (str.length < 4) return
-        var query = searchRef.whereArrayContains("keywords", str)
-        query = query.limit(LIMIT.toLong())
+        var query = searchRef.whereArrayContains(KEYWORDS, str)
+        query = query.limit(50L)
         searchAdapter.setQuery(query)
     }
 
@@ -60,7 +59,6 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
     }
 
     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-//        Log.d(TAG, s.toString())
     }
 
     private fun onBackArrowClicked() {
@@ -75,11 +73,5 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
         finish()
     }
 
-    companion object {
-
-        const val TAG = "SearchActivity"
-
-        private const val LIMIT = 50
-    }
 
 }

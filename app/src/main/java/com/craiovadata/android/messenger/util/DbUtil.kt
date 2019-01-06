@@ -17,7 +17,7 @@ object DbUtil {
 
     fun removeRegistration(context: Context, uid: String?) {
         val firestore = FirebaseFirestore.getInstance()
-        val tokensRef = firestore.collection("users/${uid}/tokens")
+        val tokensRef = firestore.collection("${USERS}/${uid}/${TOKENS}")
         val token = getRegistrationToken(context)
         if (token != null) {
             tokensRef.document(token).delete()
@@ -25,7 +25,7 @@ object DbUtil {
     }
 
     fun getRegistrationToken(context: Context): String? {
-        return context.getSharedPreferences("_", MODE_PRIVATE).getString("token", FirebaseInstanceId.getInstance().token)
+        return context.getSharedPreferences("_", MODE_PRIVATE).getString(TOKEN, FirebaseInstanceId.getInstance().token)
     }
 
     fun writeNewUser(context: Context, firebaseUser: FirebaseUser) {
@@ -37,18 +37,18 @@ object DbUtil {
         val user = User(email, displayName, photoUrl)
         val uid = firebaseUser.uid
         val batch = db.batch()
-        val usrRef = db.collection("users").document(uid)
+        val usrRef = db.collection(USERS).document(uid)
         batch.set(usrRef, user)
 
         // TODO build keywords in the cloud (functions)
         val keywords = Util.getKeywords(email, displayName)
-        val keywordsRef = db.document("userKeywords/${uid}")
+        val keywordsRef = db.document("${USER_KEYWORDS}/${uid}")
         val searchUser = SearchedUser(displayName, photoUrl, keywords)
         batch.set(keywordsRef, searchUser)
 
         val registrationToken = getRegistrationToken(context)
         if (registrationToken != null) {
-            val ref = db.document("userTokens/${uid}")
+            val ref = db.document("${USER_TOKENS}/${uid}")
             val regTokenObj = HashMap<String, Any>()
             batch.set(ref, regTokenObj, SetOptions.merge())
         }
@@ -65,8 +65,8 @@ object DbUtil {
         batch.set(getRoomsRef(palId!!).document(roomID).collection(MESSAGES).document(msgRef.id), message)
 
         val usr = HashMap<String, Any>()
-        usr.put("lastMsgAuthor", message.displayName!!)
-        usr.put("lastMsg", message.text!!)
+        usr.put(LAST_MESSAGE_AUTHOR, message.displayName!!)
+        usr.put(LAST_MESSAGE, message.text!!)
 
         batch.update(getRoomsRef(uid).document(roomID), usr)
         batch.update(getRoomsRef(palId).document(roomID), usr)
@@ -76,7 +76,7 @@ object DbUtil {
 
     fun getRoomsRef(uid: String): CollectionReference {
         val firestore = FirebaseFirestore.getInstance()
-        return firestore.collection("${USERS}/${uid}/rooms")
+        return firestore.collection("${USERS}/${uid}/${ROOMS}")
     }
 
 }

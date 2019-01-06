@@ -13,8 +13,7 @@ import androidx.core.app.TaskStackBuilder
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.DetailsActivity
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.util.ForegroundBackgroundListener
-import com.craiovadata.android.messenger.util.KEY_ROOM_ID
+import com.craiovadata.android.messenger.util.*
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
 import com.google.firebase.auth.FirebaseAuth
@@ -26,7 +25,7 @@ import com.google.firebase.messaging.RemoteMessage
 
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
-
+    val TAG = "MyFirebaseMsgService"
     /**
      * Called when message is received.
      *
@@ -116,7 +115,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val isActive = ForegroundBackgroundListener.isForeground()
         Log.d(TAG, "Short lived task is done. active: " + isActive)
 
-        val text = data["text"]
+        val text = data[TEXT]
         if (text != null && !isActive) {
             sendNotification(data)
         }
@@ -135,22 +134,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return
         val user: FirebaseUser = FirebaseAuth.getInstance().currentUser ?: return
 
-        val tokensRef = FirebaseFirestore.getInstance().document("users/${user.uid}/tokens/${token}")
+        val tokensRef = FirebaseFirestore.getInstance().document("${USERS}/${user.uid}/${TOKENS}/${token}")
         val dataTk = HashMap<String, Any>()
 //        dataTk[token] = true
         tokensRef.set(dataTk, SetOptions.merge())
 
     }
 
-    /**
-     * Create and show a simple notification containing the received FCM message.
-     *
-     * @param messageBody FCM message body received.
-     */
     private fun sendNotification(data: MutableMap<String, String>) {
         val intent = Intent(this, DetailsActivity::class.java)
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.putExtra(KEY_ROOM_ID, data["roomId"])
+        intent.putExtra(KEY_ROOM_ID, data[ROOM_ID])
 
         val pendingIntent: PendingIntent? = TaskStackBuilder.create(this)
                 // add all of DetailsActivity's parents to the stack,
@@ -161,8 +155,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
                 .setSmallIcon(R.drawable.ic_message_white_24px)
-                .setContentTitle("Message from " + data["author"])
-                .setContentText(data["text"])
+                .setContentTitle("Message from " + data[AUTHOR])
+                .setContentText(data[TEXT])
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(pendingIntent)
@@ -180,7 +174,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val futureTarget = Glide.with(this)
                 .asBitmap()
-                .load(data["photoUrl"])
+                .load(data[PHOTO_URL])
                 .submit()
 
         val bitmap = futureTarget.get()
@@ -193,8 +187,4 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
     }
 
-    companion object {
-
-        private const val TAG = "MyFirebaseMsgService"
-    }
 }

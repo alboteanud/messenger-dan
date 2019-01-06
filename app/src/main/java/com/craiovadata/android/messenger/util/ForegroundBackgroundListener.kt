@@ -7,8 +7,6 @@ import androidx.lifecycle.OnLifecycleEvent
 
 class ForegroundBackgroundListener : LifecycleObserver {
 
-
-
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onStart() {
         Log.v("ProcessLog", "APP IS ON FOREGROUND")

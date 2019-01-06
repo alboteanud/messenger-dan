@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.craiovadata.android.messenger.util.ForegroundBackgroundListener
 
- class AnotherApp : Application() {
+class DummyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()

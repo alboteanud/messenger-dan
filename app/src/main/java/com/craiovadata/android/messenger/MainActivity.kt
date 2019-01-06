@@ -15,6 +15,7 @@ import com.craiovadata.android.messenger.adapter.RoomAdapter
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
 import com.craiovadata.android.messenger.util.KEY_ROOM_ID
+import com.craiovadata.android.messenger.util.RC_SIGN_IN
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
@@ -57,7 +58,7 @@ class MainActivity : AppCompatActivity(),
     private fun initRoomAdapter() {
         query = FirebaseFirestore.getInstance().collection("users/${auth.currentUser?.uid}/rooms")
                 .orderBy("lastMsgTime", Query.Direction.DESCENDING)
-                .limit(LIMIT.toLong())
+                .limit(30L)
 
         roomAdapter = object : RoomAdapter(query, this@MainActivity, auth.currentUser?.displayName) {
             override fun onDataChanged() {
@@ -198,12 +199,4 @@ class MainActivity : AppCompatActivity(),
         dialog.show()
     }
 
-    companion object {
-
-        const val TAG = "MainActivity"
-
-        private const val RC_SIGN_IN = 9001
-
-        private const val LIMIT = 50
-    }
 }

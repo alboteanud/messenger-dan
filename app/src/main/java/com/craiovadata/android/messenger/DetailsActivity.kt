@@ -1,6 +1,5 @@
 package com.craiovadata.android.messenger
 
-//import android.app.TaskStackBuilder
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -26,6 +25,7 @@ class DetailsActivity : AppCompatActivity() {
     private lateinit var messageAdapter: MessageAdapter
     private var room: Room? = null
     private lateinit var user: FirebaseUser
+    val TAG = "Details Activity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -150,13 +150,4 @@ class DetailsActivity : AppCompatActivity() {
     }
 
 
-    companion object {
-        private const val TAG = "RoomMessages"
-//        const val KEY_ROOM_ID = "key_room_id"
-//        const val KEY_USER_ID = "key_user_id"
-//        const val USERS = "users"
-//        const val MESSAGES = "messages"
-//        const val PAL_ID = "palId"
-//        const val TIMESTAMP = "timestamp"
-    }
 }

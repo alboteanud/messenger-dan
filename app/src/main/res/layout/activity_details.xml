@@ -99,7 +99,6 @@
             android:background="?attr/selectableItemBackground"
             app:srcCompat="@drawable/ic_send" />
 
-
     </LinearLayout>
 
 </RelativeLayout>
