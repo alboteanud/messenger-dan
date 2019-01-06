@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View.OnClickListener
@@ -13,6 +14,11 @@ import android.widget.Button
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.google.android.gms.tasks.Continuation
+import com.google.android.gms.tasks.Task
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.UploadTask
+import java.io.File
 import java.io.IOException
 
 
@@ -60,14 +66,34 @@ class RecordActivity : AppCompatActivity() {
         stopPlaying()
     }
 
-    private fun onUpload(start: Boolean) = if (start) {
+    private fun onUpload() {
         startUpload()
-    } else {
-//        stopPlaying()
+
     }
 
     private fun startUpload() {
-// todo complete this method
+        val file = Uri.fromFile(File(mFileName))
+        val ref = FirebaseStorage.getInstance().reference.child("sounds/${file.lastPathSegment}")
+        val uploadTask = ref.putFile(file)
+
+        uploadTask.continueWithTask(Continuation<UploadTask.TaskSnapshot, Task<Uri>> { task ->
+            if (!task.isSuccessful) {
+                task.exception?.let {
+                    throw it
+                }
+            }
+            return@Continuation ref.downloadUrl
+        }).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val downloadUri = task.result
+                Log.d(LOG_TAG, "uploaded succesfully at: " + downloadUri)
+                if (downloadUri != null) {
+                    startPlayingUri(downloadUri)
+                }
+            } else {
+                // Handle failures
+            }
+        }
     }
 
     private fun startPlaying() {
@@ -76,7 +102,19 @@ class RecordActivity : AppCompatActivity() {
                 setDataSource(mFileName)
                 prepare()
                 start()
-            } catch (e: IOException) {
+            } catch (e: Throwable) {
+                Log.e(LOG_TAG, "prepare() failed")
+            }
+        }
+    }
+
+    private fun startPlayingUri(downloadUri: Uri) {
+        mPlayer = MediaPlayer().apply {
+            try {
+                setDataSource(this@RecordActivity, downloadUri)
+                prepare()
+                start()
+            } catch (e: Throwable) {
                 Log.e(LOG_TAG, "prepare() failed")
             }
         }
@@ -149,18 +187,12 @@ class RecordActivity : AppCompatActivity() {
     }
 
     internal inner class UploadButton(ctx: Context) : Button(ctx) {
-        var mStartUploading = true
         var clicker: OnClickListener = OnClickListener {
-            onUpload(mStartUploading)
-            text = when (mStartUploading) {
-                true -> "Stop upload"
-                false -> "Start upload"
-            }
-            mStartUploading = !mStartUploading
+            onUpload()
         }
 
         init {
-            text = "Start upload"
+            text = "Upload"
             setOnClickListener(clicker)
         }
     }
