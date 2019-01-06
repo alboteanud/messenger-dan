@@ -189,6 +189,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 // Do something with the Bitmap and then when you're done with it:
         Glide.with(this).clear(futureTarget)
 
+
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
     }
 
