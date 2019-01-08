@@ -2,7 +2,6 @@ package com.craiovadata.android.messenger.adapter
 
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.VISIBLE
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -14,9 +13,6 @@ import kotlinx.android.synthetic.main.item_message.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * RecyclerView roomAdapter for a list of [Message].
- */
 open class MessageAdapter(query: Query, private val user: FirebaseUser) : FirestoreAdapter<MessageAdapter.ViewHolder>(query) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,24 +31,16 @@ open class MessageAdapter(query: Query, private val user: FirebaseUser) : Firest
                 return
             }
 
-//            itemView.ratingItemName.text = message.displayName
             itemView.messageItemText.text = message.text
-
 
 //            if (message.timestamp != null) itemView.ratingItemDate.text = FORMAT.format(message.timestamp)
 
             if (user.uid == message.userId) {
-                // it is me
-                itemView.messageItemText.setBackgroundColor(itemView.context.getColor(R.color.gray2))
-                itemView.emptySpace.visibility = VISIBLE
-
-            } else {
-                Glide.with(itemView.context)
-                        .load(message.photoUrl)
-                        .into(itemView.messageItemImageView)
-                itemView.messageItemText.setBackgroundColor(itemView.context.getColor(R.color.gray4))
+//                itemView.messageItemText.setBackgroundColor(itemView.context.getColor(R.color.gray2))
             }
-
+            Glide.with(itemView.context)
+                    .load(message.photoUrl)
+                    .into(itemView.messageItemImageView)
         }
 
         companion object {

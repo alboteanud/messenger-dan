@@ -5,38 +5,34 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.craiovadata.android.messenger.adapter.RoomAdapter
+import com.craiovadata.android.messenger.adapter.ConversationAdapter
+import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
-import com.craiovadata.android.messenger.util.KEY_ROOM_ID
-import com.craiovadata.android.messenger.util.RC_SIGN_IN
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
-import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(),
-        RoomAdapter.OnRoomSelectedListener,
+        ConversationAdapter.OnRoomSelectedListener,
         FirebaseAuth.AuthStateListener {
 
-    lateinit var query: Query
-    lateinit var roomAdapter: RoomAdapter
+    private lateinit var conversationAdapter: ConversationAdapter
     private lateinit var viewModel: MainActivityViewModel
-    lateinit var auth: FirebaseAuth
+    private lateinit var auth: FirebaseAuth
+    private var uid: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,64 +41,39 @@ class MainActivity : AppCompatActivity(),
         toolbar.logo = null
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-//        FirebaseFirestore.setLoggingEnabled(true)
 
         auth = FirebaseAuth.getInstance()
-        toolbar.title = auth.currentUser?.displayName
 
-        initRoomAdapter()
+        val currentUser = auth.currentUser
 
-        checkPlayServices(this)
-    }
-
-    private fun initRoomAdapter() {
-        query = FirebaseFirestore.getInstance().collection("users/${auth.currentUser?.uid}/rooms")
-                .orderBy("lastMsgTime", Query.Direction.DESCENDING)
-                .limit(30L)
-
-        roomAdapter = object : RoomAdapter(query, this@MainActivity, auth.currentUser?.displayName) {
-            override fun onDataChanged() {
-                // Show/hide content if the query returns empty.
-                if (itemCount == 0) {
-                    recyclerRestaurants.visibility = View.GONE
-                    viewEmpty.visibility = View.VISIBLE
-                } else {
-                    recyclerRestaurants.visibility = View.VISIBLE
-                    viewEmpty.visibility = View.GONE
-                }
-            }
-
-            override fun onError(e: FirebaseFirestoreException) {
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Error: check logs for info.", Snackbar.LENGTH_LONG).show()
-            }
+        if (currentUser != null) {
+            uid = currentUser.uid
+            toolbar.title = currentUser.displayName
+            initListAdapter(uid)
         }
 
-        recyclerRestaurants.layoutManager = LinearLayoutManager(this)
-        recyclerRestaurants.adapter = roomAdapter
+        checkPlayServices(this)
 
     }
 
     public override fun onStart() {
         super.onStart()
 
-        if (shouldStartSignIn()) {
+        if (shouldStartSignIn())
             startSignIn()
-            return
-        }
 
         auth.addAuthStateListener(this)
 
-        if (::roomAdapter.isInitialized) // maybe auth = null so roomAdapter not initialised
-            roomAdapter.startListening()
+        if (::conversationAdapter.isInitialized)
+            conversationAdapter.startListening()
 
     }
 
     public override fun onStop() {
         super.onStop()
         auth.removeAuthStateListener(this)
-        if (::roomAdapter.isInitialized) // maybe auth = null so roomAdapter not initialised
-            roomAdapter.stopListening()
+        if (::conversationAdapter.isInitialized)
+            conversationAdapter.stopListening()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -127,6 +98,17 @@ class MainActivity : AppCompatActivity(),
         return super.onOptionsItemSelected(item)
     }
 
+    private fun initListAdapter(uid: String) {
+        val ref = FirebaseFirestore.getInstance().collection("$USERS/$uid/$CONVERSATIONS")
+        val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
+
+        conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
+        recyclerConversations.layoutManager = LinearLayoutManager(this)
+        recyclerConversations.adapter = conversationAdapter
+
+        conversationAdapter.startListening()
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == RC_SIGN_IN) {
@@ -135,11 +117,12 @@ class MainActivity : AppCompatActivity(),
 
             if (resultCode == Activity.RESULT_OK) {
                 // Successfully signed in
-                val firebaseUser = FirebaseAuth.getInstance().currentUser
-                if (firebaseUser != null) {
-                    writeNewUser(this@MainActivity, firebaseUser)
-                    initRoomAdapter()
-                    roomAdapter.startListening()
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                if (currentUser != null) {
+                    uid = currentUser.uid
+                    writeNewUser(this@MainActivity, currentUser)
+                    initListAdapter(currentUser.uid)
+
                 }
             } else {
                 if (response == null) {
@@ -162,12 +145,12 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun shouldStartSignIn(): Boolean {
-        return !viewModel.isSigningIn && FirebaseAuth.getInstance().currentUser == null
+        return !viewModel.isSigningIn && auth.currentUser == null
     }
 
     override fun onAuthStateChanged(auth: FirebaseAuth) {
-        if (auth.currentUser == null) {
-            removeRegistration(this@MainActivity, this.auth.uid)
+        if (auth.currentUser == null && !uid.equals("")) {
+            removeRegistration(this@MainActivity, uid)
         }
     }
 
@@ -198,5 +181,6 @@ class MainActivity : AppCompatActivity(),
 
         dialog.show()
     }
+
 
 }

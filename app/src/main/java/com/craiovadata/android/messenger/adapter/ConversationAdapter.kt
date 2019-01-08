@@ -6,22 +6,17 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.model.Room
+import com.craiovadata.android.messenger.model.Conversation
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_room.view.*
 
-/**
- * RecyclerView roomAdapter for a list of rooms.
- */
-open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListener, private val userName: String?) :
-        FirestoreAdapter<RoomAdapter.ViewHolder>(query) {
+open class ConversationAdapter(query: Query, private val listener: OnRoomSelectedListener) :
+        FirestoreAdapter<ConversationAdapter.ViewHolder>(query) {
 
     interface OnRoomSelectedListener {
-
         fun onRoomSelected(room: DocumentSnapshot)
     }
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -30,37 +25,28 @@ open class RoomAdapter(query: Query, private val listener: OnRoomSelectedListene
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getSnapshot(position), listener, userName)
+        holder.bind(getSnapshot(position), listener)
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(
                 snapshot: DocumentSnapshot,
-                listener: OnRoomSelectedListener?,
-                userName: String?
+                listener: OnRoomSelectedListener?
         ) {
 
-            val room = snapshot.toObject(Room::class.java) ?: return
-
+            val conversation = snapshot.toObject(Conversation::class.java) ?: return
 
 //            val resources = itemView.resources
 
             Glide.with(itemView.roomItemImage.context)
-                    .load(room.palPhotoUrl)
+                    .load(conversation.palPhotoUrl)
                     .into(itemView.roomItemImage)
 
+            itemView.roomName.text = conversation.palName
+            itemView.lastMsg.text = conversation.lastMessage
 
-            val roomName = room.palName
-            itemView.roomName.text = roomName
-            itemView.lastMsg.text = room.lastMsg
-
-            var text = ""
-            if (room.lastMsgAuthor != roomName)
-                text = room.lastMsgAuthor + ":"
-            if (room.lastMsgAuthor == userName)
-                text = "You:"
-            itemView.author.text = text
+            itemView.author.text = conversation.msgAuthor
 
             // Click listener
             itemView.setOnClickListener {

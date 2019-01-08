@@ -5,8 +5,12 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
@@ -16,6 +20,7 @@ import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.util.*
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
@@ -45,7 +50,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "Message From: ${remoteMessage?.from}")
+        Log.d(TAG, "Message from ${remoteMessage?.from}")
 
         // Check if message contains a data payload.
         remoteMessage?.data?.isNotEmpty()?.let {
@@ -116,8 +121,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Log.d(TAG, "Short lived task is done. active: " + isActive)
 
         val text = data[TEXT]
-        if (text != null && !isActive) {
+        if (text != null) {
+            if (!isActive)
             sendNotification(data)
+            if (text.startsWith("https://firebasestorage.googleapis.")) {
+                Handler(Looper.getMainLooper()).postDelayed({
+                    startPlaying(text)
+                }, 1000)
+
+            }
         }
     }
 
@@ -130,21 +142,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      * @param token The new token.
      */
     fun sendRegistrationToServer(token: String?) {
-        if (token == null)
-            return
-        val user: FirebaseUser = FirebaseAuth.getInstance().currentUser ?: return
+        val currentUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser
 
-        val tokensRef = FirebaseFirestore.getInstance().document("${USERS}/${user.uid}/${TOKENS}/${token}")
-        val dataTk = HashMap<String, Any>()
-//        dataTk[token] = true
-        tokensRef.set(dataTk, SetOptions.merge())
+        if (token == null || currentUser == null) return
+
+        val ref = FirebaseFirestore.getInstance().document("$USERS/${currentUser.uid}/$TOKENS/$token")
+        val hashMap = HashMap<String, Any>()
+        hashMap["updated"] = Timestamp.now()
+        ref.set(hashMap, SetOptions.merge())
 
     }
 
     private fun sendNotification(data: MutableMap<String, String>) {
         val intent = Intent(this, DetailsActivity::class.java)
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.putExtra(KEY_ROOM_ID, data[ROOM_ID])
+        val convID = data["convID"]  // from functions
+        intent.putExtra(KEY_ROOM_ID, convID)
 
         val pendingIntent: PendingIntent? = TaskStackBuilder.create(this)
                 // add all of DetailsActivity's parents to the stack,
@@ -185,6 +198,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
 
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
+    }
+
+    private fun startPlaying(url: String) {
+        MediaPlayer().apply {
+            try {
+                val urlF = "https://firebasestorage.googleapis.com/v0/b/my-project-1526043266253.appspot.com/o/sounds%2Faudiorecordtest.3gp?alt=media&token=53fb5d2a-7486-4097-9267-75f2e1b02eed"
+                setDataSource(this@MyFirebaseMessagingService, Uri.parse(urlF))
+                prepare()
+                start()
+            } catch (e: Throwable) {
+                Log.e("MsgingService", "prepare() failed")
+            }
+        }
     }
 
 }

@@ -20,7 +20,7 @@
 
     <!-- Main Restaurants recycler -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerRestaurants"
+        android:id="@+id/recyclerConversations"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/toolbar"
@@ -34,39 +34,13 @@
         android:layout_below="@+id/toolbar"
         android:background="@drawable/bg_shadow" />
 
-    <!-- Empty list (pizza guy) view -->
-    <LinearLayout
-        android:id="@+id/viewEmpty"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_below="@+id/toolbar"
-        android:layout_centerHorizontal="true"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone"
-        tools:visibility="gone">
-
-        <ImageView
-            style="@style/AppTheme.PizzaGuy"
-            android:src="@drawable/pizza_monster" />
-
-        <TextView
-            style="@style/AppTheme.Body1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/message_no_results"
-            android:textColor="#aaa" />
-
-    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressLoading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/recyclerRestaurants"
-        android:layout_alignTop="@+id/recyclerRestaurants"
+        android:layout_alignTop="@+id/recyclerConversations"
+        android:layout_alignBottom="@+id/recyclerConversations"
         android:layout_centerHorizontal="true"
         android:visibility="gone" />
 

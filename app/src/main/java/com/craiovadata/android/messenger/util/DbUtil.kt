@@ -6,22 +6,25 @@ import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.SearchedUser
 import com.craiovadata.android.messenger.model.User
 import com.google.android.gms.tasks.Task
+import com.google.firebase.Timestamp.now
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.messaging.FirebaseMessagingService
+import java.util.*
 
 
 object DbUtil {
 
     fun removeRegistration(context: Context, uid: String?) {
-        val firestore = FirebaseFirestore.getInstance()
-        val tokensRef = firestore.collection("${USERS}/${uid}/${TOKENS}")
         val token = getRegistrationToken(context)
         if (token != null) {
+            val tokensRef = FirebaseFirestore.getInstance().collection("$USERS/${uid}/$TOKENS")
             tokensRef.document(token).delete()
         }
+        context.getSharedPreferences("_", FirebaseMessagingService.MODE_PRIVATE).edit().remove("token").apply()
     }
 
     fun getRegistrationToken(context: Context): String? {
@@ -42,41 +45,42 @@ object DbUtil {
 
         // TODO build keywords in the cloud (functions)
         val keywords = Util.getKeywords(email, displayName)
-        val keywordsRef = db.document("${USER_KEYWORDS}/${uid}")
+        val keywordsRef = db.document("$USER_KEYWORDS/$uid")
         val searchUser = SearchedUser(displayName, photoUrl, keywords)
         batch.set(keywordsRef, searchUser)
 
         val registrationToken = getRegistrationToken(context)
         if (registrationToken != null) {
-            val ref = db.document("${USER_TOKENS}/${uid}")
+            val ref = db.document("$USERS/$uid/$TOKENS/$registrationToken")
             val regTokenObj = HashMap<String, Any>()
+            regTokenObj["updated"] = now()
             batch.set(ref, regTokenObj, SetOptions.merge())
         }
 
         batch.commit()
     }
 
-    fun addMessage(roomID: String, message: Message, palId: String?, uid: String): Task<Void> {
-
-        val msgRef = getRoomsRef(uid).document(roomID).collection(MESSAGES).document()
+    fun addMessage(convID: String, msgText: String, palId: String, currentUser: FirebaseUser): Task<Void> {
+        val message = Message(currentUser, msgText)
+        val msgRef = getRoomsRef(currentUser.uid).document(convID).collection(MESSAGES).document()
         val batch = FirebaseFirestore.getInstance().batch()
 
         batch.set(msgRef, message)
-        batch.set(getRoomsRef(palId!!).document(roomID).collection(MESSAGES).document(msgRef.id), message)
+        batch.set(getRoomsRef(palId).document(convID).collection(MESSAGES).document(msgRef.id), message)
 
         val usr = HashMap<String, Any>()
-        usr.put(LAST_MESSAGE_AUTHOR, message.displayName!!)
-        usr.put(LAST_MESSAGE, message.text!!)
+        currentUser.displayName?.let { usr.put(LAST_MESSAGE_AUTHOR, it) }
+        usr.put(LAST_MESSAGE, msgText)
 
-        batch.update(getRoomsRef(uid).document(roomID), usr)
-        batch.update(getRoomsRef(palId).document(roomID), usr)
+        batch.update(getRoomsRef(currentUser.uid).document(convID), usr)
+        batch.update(getRoomsRef(palId).document(convID), usr)
 
         return batch.commit()
     }
 
     fun getRoomsRef(uid: String): CollectionReference {
         val firestore = FirebaseFirestore.getInstance()
-        return firestore.collection("${USERS}/${uid}/${ROOMS}")
+        return firestore.collection("${USERS}/${uid}/${CONVERSATIONS}")
     }
 
 }
