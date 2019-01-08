@@ -1,6 +1,8 @@
 package com.craiovadata.android.messenger
 
-import android.media.MediaPlayer
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Bundle
@@ -9,11 +11,15 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.model.User
+import com.craiovadata.android.messenger.services.ACTION_PLAY
+import com.craiovadata.android.messenger.services.MediaPlayerService
+import com.craiovadata.android.messenger.services.URL_EXTRA_PLAY
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.addMessage
 import com.craiovadata.android.messenger.util.DbUtil.getRoomsRef
@@ -30,6 +36,7 @@ import kotlinx.android.synthetic.main.activity_details.*
 import java.io.File
 import java.io.IOException
 
+private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
 class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
 
@@ -40,6 +47,10 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     private lateinit var auth: FirebaseAuth
     private var mRecorder: MediaRecorder? = null
     private var mFileName: String = ""
+
+    // Requesting permission to RECORD_AUDIO
+    private var permissionToRecordAccepted = false
+    private var permissions: Array<String> = arrayOf(Manifest.permission.RECORD_AUDIO)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,18 +68,19 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
             }
         }
 
-        mFileName = "${externalCacheDir.absolutePath}/audiorecordtest2.3gp"
+        mFileName = "${externalCacheDir.absolutePath}/audiorecordtest.3gp"
 
         buttonBack.setOnClickListener { onBackArrowClicked() }
         sendButton.setOnClickListener { onMsgSubmitClicked() }
         recordButton.setOnTouchListener(this)
 
-
+        ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION)
     }
 
     override fun onTouch(recordButton: View, event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                writeMsgLayout.setBackgroundColor(getColor(android.R.color.holo_green_light))
                 if (mRecorder == null)
                     startRecording()
                 else {
@@ -78,7 +90,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
 
             }
             MotionEvent.ACTION_UP -> {
-
+                writeMsgLayout.setBackgroundColor(getColor(android.R.color.white))
                 stopRecording()
                 startUpload()
             }
@@ -136,7 +148,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
                 Log.d(TAG, "uploaded succesfully at: " + downloadUri)
                 if (downloadUri != null) {
                     auth.currentUser?.let {
-                        startPlaying(downloadUri.toString())
+                        //                        startPlaying(downloadUri.toString())
                         addMessage(conversationID, downloadUri.toString(), conversation.palId, it)
                                 .addOnSuccessListener(this) {
                                     Log.d(TAG, "Message added")
@@ -153,15 +165,10 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     }
 
     private fun startPlaying(url: String) {
-        MediaPlayer().apply {
-            try {
-                setDataSource(this@DetailsActivity, Uri.parse(url))
-                prepare()
-                start()
-            } catch (e: Throwable) {
-                Log.e("MsgingService", "prepare() failed")
-            }
-        }
+        val intent = Intent(this@DetailsActivity, MediaPlayerService::class.java)
+        intent.action = ACTION_PLAY
+        intent.putExtra(URL_EXTRA_PLAY, url)
+        startService(intent)
     }
 
     private fun fetchConversation(roomID: String, currentUser: FirebaseUser) {
@@ -275,6 +282,20 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
 
     companion object {
         val TAG = "DetailsActivity"
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<String>,
+            grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionToRecordAccepted = if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        } else {
+            false
+        }
+        if (!permissionToRecordAccepted) finish()
     }
 
 }

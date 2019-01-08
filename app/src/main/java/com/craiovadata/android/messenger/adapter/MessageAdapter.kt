@@ -27,11 +27,17 @@ open class MessageAdapter(query: Query, private val user: FirebaseUser) : Firest
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         fun bind(message: Message?, user: FirebaseUser) {
-            if (message == null) {
-                return
-            }
+            if (message == null) return
 
-            itemView.messageItemText.text = message.text
+            var txtToShow = message.text
+            if (txtToShow != null) {
+                if (txtToShow.startsWith("https://firebasestorage.googleapis.")) {
+//                    val dateTxt = FORMAT.format(message.timestamp)
+                    txtToShow = "audio message"
+                }
+
+                itemView.messageItemText.text = txtToShow
+            }
 
 //            if (message.timestamp != null) itemView.ratingItemDate.text = FORMAT.format(message.timestamp)
 
@@ -46,7 +52,7 @@ open class MessageAdapter(query: Query, private val user: FirebaseUser) : Firest
         companion object {
 
             private val FORMAT = SimpleDateFormat(
-                    "MM/dd/yyyy", Locale.US)
+                    "HH:mm", Locale.US)
         }
     }
 }

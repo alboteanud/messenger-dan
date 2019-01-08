@@ -7,10 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
@@ -29,8 +26,9 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 
-class MyFirebaseMessagingService : FirebaseMessagingService() {
-    val TAG = "MyFirebaseMsgService"
+class MyFirebaseMessagingService : FirebaseMessagingService(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
+
+
     /**
      * Called when message is received.
      *
@@ -122,14 +120,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val text = data[TEXT]
         if (text != null) {
-            if (!isActive)
-            sendNotification(data)
             if (text.startsWith("https://firebasestorage.googleapis.")) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    startPlaying(text)
-                }, 1000)
-
+                startPlaying(data)
+                data[TEXT] = "audio message"
             }
+            if (!isActive)
+                sendNotification(data)
+
         }
     }
 
@@ -200,17 +197,42 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
     }
 
-    private fun startPlaying(url: String) {
+    private fun startPlaying(data: MutableMap<String, String>) {
+
+//        val intent = Intent(this@MyFirebaseMessagingService, MediaPlayerService::class.java)
+//        intent.action = ACTION_PLAY
+//        intent.putExtra(URL_EXTRA_PLAY, url)
+//        startService(intent)
+        val previousMsgId = getSharedPreferences("_", Context.MODE_PRIVATE).getString("lastMsgID", "")
+        val thisMsgID = data["messageId"]
+
+        if (thisMsgID.equals(previousMsgId)) return
+
+        getSharedPreferences("_", Context.MODE_PRIVATE).edit().putString("lastMsgID", thisMsgID).apply()
+
+        val msgText = data[TEXT]
         MediaPlayer().apply {
-            try {
-                val urlF = "https://firebasestorage.googleapis.com/v0/b/my-project-1526043266253.appspot.com/o/sounds%2Faudiorecordtest.3gp?alt=media&token=53fb5d2a-7486-4097-9267-75f2e1b02eed"
-                setDataSource(this@MyFirebaseMessagingService, Uri.parse(urlF))
-                prepare()
-                start()
-            } catch (e: Throwable) {
-                Log.e("MsgingService", "prepare() failed")
-            }
+            Log.d(TAG, "url: " + msgText)
+            setDataSource(msgText)
+            setOnPreparedListener(this@MyFirebaseMessagingService)
+//            setOnPreparedListener { start() } // not working
+            setOnCompletionListener(this@MyFirebaseMessagingService)
+            prepareAsync() // prepare async to not block main thread
         }
+
+    }
+
+    override fun onPrepared(mp: MediaPlayer) {
+        mp.start()
+    }
+
+    override fun onCompletion(mp: MediaPlayer) {
+        mp.stop()
+        mp.release()
+    }
+
+    companion object {
+        val TAG = "MyFirMessengingService"
     }
 
 }
