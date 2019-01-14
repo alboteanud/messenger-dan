@@ -26,7 +26,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 
-class MyFirebaseMessagingService : FirebaseMessagingService(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
+class MyMessagingService : FirebaseMessagingService(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {
 
 
     /**
@@ -199,7 +199,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), MediaPlayer.OnPre
 
     private fun startPlaying(data: MutableMap<String, String>) {
 
-//        val intent = Intent(this@MyFirebaseMessagingService, MediaPlayerService::class.java)
+//        val intent = Intent(this@MyMessagingService, MediaPlayerService::class.java)
 //        intent.action = ACTION_PLAY
 //        intent.putExtra(URL_EXTRA_PLAY, url)
 //        startService(intent)
@@ -214,9 +214,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService(), MediaPlayer.OnPre
         MediaPlayer().apply {
             Log.d(TAG, "url: " + msgText)
             setDataSource(msgText)
-            setOnPreparedListener(this@MyFirebaseMessagingService)
+            setOnPreparedListener(this@MyMessagingService)
 //            setOnPreparedListener { start() } // not working
-            setOnCompletionListener(this@MyFirebaseMessagingService)
+            setOnCompletionListener(this@MyMessagingService)
             prepareAsync() // prepare async to not block main thread
         }
 

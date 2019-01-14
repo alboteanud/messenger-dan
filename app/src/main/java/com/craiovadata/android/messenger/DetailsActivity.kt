@@ -12,8 +12,10 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.model.User
@@ -49,8 +51,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     private var mFileName: String = ""
 
     // Requesting permission to RECORD_AUDIO
-    private var permissionToRecordAccepted = false
-    private var permissions: Array<String> = arrayOf(Manifest.permission.RECORD_AUDIO)
+//    private var permissionToRecordAccepted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,24 +71,38 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
 
         mFileName = "${externalCacheDir.absolutePath}/audiorecordtest.3gp"
 
-        buttonBack.setOnClickListener { onBackArrowClicked() }
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+
         sendButton.setOnClickListener { onMsgSubmitClicked() }
         recordButton.setOnTouchListener(this)
 
-        ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION)
+
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 
     override fun onTouch(recordButton: View, event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+
+                if (ContextCompat.checkSelfPermission(this@DetailsActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    // Permission is not granted
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
+                    return true
+                }
+
+
                 writeMsgLayout.setBackgroundColor(getColor(android.R.color.holo_green_light))
-                if (mRecorder == null)
+                if (mRecorder == null) {
                     startRecording()
-                else {
+                } else {
                     stopRecording()
                     startRecording()
                 }
-
             }
             MotionEvent.ACTION_UP -> {
                 writeMsgLayout.setBackgroundColor(getColor(android.R.color.white))
@@ -100,6 +115,8 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     }
 
     private fun startRecording() {
+
+
         mRecorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
@@ -164,13 +181,6 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         }
     }
 
-    private fun startPlaying(url: String) {
-        val intent = Intent(this@DetailsActivity, MediaPlayerService::class.java)
-        intent.action = ACTION_PLAY
-        intent.putExtra(URL_EXTRA_PLAY, url)
-        startService(intent)
-    }
-
     private fun fetchConversation(roomID: String, currentUser: FirebaseUser) {
         getRoomsRef(currentUser.uid).document(roomID).get().addOnSuccessListener { snapshot ->
             if (snapshot != null) {
@@ -218,11 +228,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     }
 
     private fun initHeaderUI(conversation: Conversation?) {
-        conversationName.text = conversation?.palName
-        val photoUrl = conversation?.palPhotoUrl
-        Glide.with(palImage.context)
-                .load(photoUrl)
-                .into(palImage)
+        supportActionBar?.title = conversation?.palName
     }
 
     private fun initMsgList(conversationID: String, user: FirebaseUser) {
@@ -243,25 +249,21 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         msgFormText.text = null
         auth.currentUser?.let {
             addMessage(conversationID, msgText, conversation.palId, it)
-                .addOnSuccessListener(this) {
-                    Log.d(TAG, "Message added")
+                    .addOnSuccessListener(this) {
+                        Log.d(TAG, "Message added")
 //                    hideKeyboard()
-                    recyclerMsgs.smoothScrollToPosition(0)
+                        recyclerMsgs.smoothScrollToPosition(0)
 
-                }
-                .addOnFailureListener(this) { e -> Log.w(TAG, "Add message failed", e) }
+                    }
+                    .addOnFailureListener(this) { e -> Log.w(TAG, "Add message failed", e) }
         }
 
     }
-
+    
     public override fun onStart() {
         super.onStart()
-        if (::messageAdapter.isInitialized) {
+        if (::messageAdapter.isInitialized)
             messageAdapter.startListening()
-
-            // from notif
-            Handler().postDelayed({ recyclerMsgs.smoothScrollToPosition(0) }, 1500)
-        }
 
     }
 
@@ -271,31 +273,37 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
             messageAdapter.stopListening()
     }
 
+    // onBackPressed
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
 
-    private fun onBackArrowClicked() {
-        onBackPressed()
-    }
 
     companion object {
         val TAG = "DetailsActivity"
     }
 
-    override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<String>,
-            grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionToRecordAccepted = if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        } else {
-            false
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        when (requestCode) {
+            REQUEST_RECORD_AUDIO_PERMISSION -> {
+                // If request is cancelled, the result arrays are empty.
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return
+            }
+
+            // Add other 'when' lines to check for other
+            // permissions this app might request.
+            else -> {
+                // Ignore all other requests.
+            }
         }
-        if (!permissionToRecordAccepted) finish()
     }
 
 }

@@ -2,7 +2,9 @@ package com.craiovadata.android.messenger
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import androidx.annotation.StringRes
@@ -24,6 +26,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
+import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+
+
 
 class MainActivity : AppCompatActivity(),
         ConversationAdapter.OnRoomSelectedListener,
@@ -37,8 +42,6 @@ class MainActivity : AppCompatActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
-        toolbar.logo = null
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
@@ -48,7 +51,7 @@ class MainActivity : AppCompatActivity(),
 
         if (currentUser != null) {
             uid = currentUser.uid
-            toolbar.title = currentUser.displayName
+            supportActionBar?.title = currentUser.displayName
             initListAdapter(uid)
         }
 
@@ -92,7 +95,7 @@ class MainActivity : AppCompatActivity(),
                 startSignIn()
             }
             R.id.menu_test -> {
-                startActivity(Intent(this@MainActivity, RecordActivity::class.java))
+         
             }
         }
         return super.onOptionsItemSelected(item)
@@ -159,9 +162,9 @@ class MainActivity : AppCompatActivity(),
         val intent = AuthUI.getInstance().createSignInIntentBuilder()
                 .setAvailableProviders(listOf(
                         AuthUI.IdpConfig.GoogleBuilder().build(),
-                        AuthUI.IdpConfig.EmailBuilder().build(),
-                        AuthUI.IdpConfig.PhoneBuilder().build()
-//                        AuthUI.IdpConfig.FacebookBuilder().build(),
+//                        AuthUI.IdpConfig.EmailBuilder().build(),
+//                        AuthUI.IdpConfig.PhoneBuilder().build(),
+                        AuthUI.IdpConfig.FacebookBuilder().build()
 //                        AuthUI.IdpConfig.TwitterBuilder().build()
                 ))
                 .setIsSmartLockEnabled(false)
