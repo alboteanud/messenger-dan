@@ -1,57 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#E0E0E0">
+    android:fitsSystemWindows="true"
+    tools:context=".DetailsActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerMsgs"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar_msgs"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    >
+
+    <FrameLayout
+        android:id="@+id/frameLayoutMessages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/writeMsgLayout"
-        android:clipToPadding="true"
-        tools:listitem="@layout/item_message" />
+        android:layout_above="@id/frameLayoutEnterMsg">
 
+        <include layout="@layout/message_list" />
+    </FrameLayout>
 
-    <LinearLayout
-        android:id="@+id/writeMsgLayout"
+    <FrameLayout
+        android:id="@+id/frameLayoutEnterMsg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="@android:color/white"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        >
 
-        <ImageView
-            android:id="@+id/recordButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackground"
-            android:padding="2dp"
-            app:srcCompat="@drawable/ic_microphone" />
-
-        <EditText
-            android:id="@+id/msgFormText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:hint="@string/hint_message" />
-
-
-        <ImageView
-            android:id="@+id/sendButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="?attr/selectableItemBackground"
-            android:padding="4dp"
-            app:srcCompat="@drawable/ic_send" />
-
-    </LinearLayout>
+        <include layout="@layout/layout_enter_msg" />
+    </FrameLayout>
 
 </RelativeLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

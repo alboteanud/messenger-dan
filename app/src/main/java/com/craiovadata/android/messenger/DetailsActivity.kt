@@ -1,47 +1,43 @@
 package com.craiovadata.android.messenger
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
-import com.craiovadata.android.messenger.R.id.*
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.model.User
-import com.craiovadata.android.messenger.services.ACTION_PLAY
-import com.craiovadata.android.messenger.services.MediaPlayerService
-import com.craiovadata.android.messenger.services.URL_EXTRA_PLAY
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.addMessage
-import com.craiovadata.android.messenger.util.DbUtil.getRoomsRef
+import com.craiovadata.android.messenger.util.DbUtil.getUserConversationsRef
 import com.google.android.gms.tasks.Continuation
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 import kotlinx.android.synthetic.main.activity_details.*
+import kotlinx.android.synthetic.main.layout_enter_msg.*
+import kotlinx.android.synthetic.main.message_list.*
 import java.io.File
 import java.io.IOException
 
 private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
-class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
-
+class DetailsActivity : AppCompatActivity() {
 
     private lateinit var conversationID: String
     private lateinit var messageAdapter: MessageAdapter
@@ -50,34 +46,44 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     private var mRecorder: MediaRecorder? = null
     private var mFileName: String = ""
 
-    // Requesting permission to RECORD_AUDIO
-//    private var permissionToRecordAccepted = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
+        setSupportActionBar(toolbar_msgs)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         auth = FirebaseAuth.getInstance()
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
+        auth.currentUser?.let { currentUser ->
             if (intent.hasExtra(KEY_ROOM_ID)) {
                 conversationID = intent.extras?.getString(KEY_ROOM_ID)!!
                 fetchConversation(conversationID, currentUser)
                 initMsgList(conversationID, currentUser)
             } else if (intent.hasExtra(KEY_USER_ID)) {
-                val palUid = intent.extras?.getString(KEY_USER_ID)!!
-                findConversation(palUid, currentUser)
+                val palUid = intent.extras?.getString(KEY_USER_ID)
+                palUid?.let { palId -> findConversation(palId, currentUser) }
             }
         }
 
-        mFileName = "${externalCacheDir.absolutePath}/audiorecordtest.3gp"
 
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowHomeEnabled(true)
+    }
 
+    private fun setListeners() {
         sendButton.setOnClickListener { onMsgSubmitClicked() }
-        recordButton.setOnTouchListener(this)
 
-
+        recordButton.setOnTouchListener(View.OnTouchListener { view, motionEvent ->
+            when (motionEvent.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    stopRecording()
+                    startRecording()
+                }
+                MotionEvent.ACTION_UP -> {
+                    //view.performClick()
+                    stopRecording()
+                    startUpload()
+                }
+            }
+            return@OnTouchListener false
+        })
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -85,54 +91,34 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         return true
     }
 
-    override fun onTouch(recordButton: View, event: MotionEvent): Boolean {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
+    private fun startRecording() {
+        if (ContextCompat.checkSelfPermission(this@DetailsActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
+            return
+        }
 
-                if (ContextCompat.checkSelfPermission(this@DetailsActivity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    // Permission is not granted
-                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
-                    return true
-                }
+        if (mRecorder == null) {
+            mFileName = "${externalCacheDir.absolutePath}/audiorecordtest.3gp"
+            mRecorder = MediaRecorder().apply {
 
-
-                writeMsgLayout.setBackgroundColor(getColor(android.R.color.holo_green_light))
-                if (mRecorder == null) {
-                    startRecording()
-                } else {
-                    stopRecording()
-                    startRecording()
-                }
-            }
-            MotionEvent.ACTION_UP -> {
-                writeMsgLayout.setBackgroundColor(getColor(android.R.color.white))
-                stopRecording()
-                startUpload()
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                setOutputFile(mFileName)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
             }
         }
-        recordButton.performClick()
-        return true
-    }
-
-    private fun startRecording() {
-
-
-        mRecorder = MediaRecorder().apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            setOutputFile(mFileName)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-
-            try {
-                prepare()
-                start()
-            } catch (e: IOException) {
-                Log.e(TAG, "prepare() failed")
-            }
+        try {
+            mRecorder!!.prepare()
+            mRecorder!!.start()
+        } catch (e: IOException) {
+            Log.e(TAG, "prepare() failed")
         }
     }
 
     private fun stopRecording() {
+
+        if (mRecorder == null) return
+
         mRecorder?.apply {
             try {
                 stop()
@@ -141,7 +127,6 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-
             release()
         }
         mRecorder = null
@@ -166,7 +151,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
                 if (downloadUri != null) {
                     auth.currentUser?.let {
                         //                        startPlaying(downloadUri.toString())
-                        addMessage(conversationID, downloadUri.toString(), conversation.palId, it)
+                        addMessage(conversationID, downloadUri.toString(), conversation, it)
                                 .addOnSuccessListener(this) {
                                     Log.d(TAG, "Message added")
                                     recyclerMsgs.smoothScrollToPosition(0)
@@ -181,8 +166,8 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         }
     }
 
-    private fun fetchConversation(roomID: String, currentUser: FirebaseUser) {
-        getRoomsRef(currentUser.uid).document(roomID).get().addOnSuccessListener { snapshot ->
+    private fun fetchConversation(convID: String, currentUser: FirebaseUser) {
+        getUserConversationsRef(currentUser.uid).document(convID).get().addOnSuccessListener { snapshot ->
             if (snapshot != null) {
                 conversation = snapshot.toObject(Conversation::class.java)!!
                 initHeaderUI(conversation)
@@ -191,18 +176,19 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
     }
 
     private fun findConversation(palUid: String, currentUser: FirebaseUser) {
-        getRoomsRef(currentUser.uid).whereEqualTo(PAL_ID, palUid).limit(1).get()
+        getUserConversationsRef(currentUser.uid).whereEqualTo(PAL_ID, palUid).limit(1).get()
                 .addOnSuccessListener { snapshot ->
-                    if (snapshot != null && !snapshot.isEmpty) {
+
+                    if (snapshot == null || snapshot.isEmpty) {
+                        Log.d(TAG, "No such document. Creating new conversation.")
+                        conversationID = getUserConversationsRef(currentUser.uid).document().id
+                        setNewRoom(conversationID, palUid, currentUser.uid) // incl. updateHeadUI
+                        setNewRoom(conversationID, currentUser.uid, palUid)
+                    } else {
                         val document = snapshot.documents[0]
                         conversationID = document.id
                         conversation = document.toObject(Conversation::class.java)!!
                         initHeaderUI(conversation)
-                    } else {
-                        Log.d(TAG, "No such document. Creating new conversation.")
-                        conversationID = getRoomsRef(currentUser.uid).document().id
-                        setNewRoom(conversationID, palUid, currentUser.uid) // incl. updateHeadUI
-                        setNewRoom(conversationID, currentUser.uid, palUid)
                     }
                     initMsgList(conversationID, currentUser)
                 }
@@ -221,34 +207,32 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
                                 initHeaderUI(conversation)
                                 FirebaseMessaging.getInstance().subscribeToTopic(roomID)
                             }
-                            getRoomsRef(destUid).document(roomID).set(newRoom)
+                            getUserConversationsRef(destUid).document(roomID).set(newRoom)
                         }
                     }
                 }
     }
 
     private fun initHeaderUI(conversation: Conversation?) {
-        supportActionBar?.title = conversation?.palName
+        toolbar_msgs.title = conversation?.palName
     }
 
     private fun initMsgList(conversationID: String, user: FirebaseUser) {
-        val query = getRoomsRef(user.uid).document(conversationID).collection(MESSAGES)
+        val query = getUserConversationsRef(user.uid).document(conversationID).collection(MESSAGES)
                 .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
                 .limit(50L)
 
         messageAdapter = object : MessageAdapter(query, user) {}
-        val manager = LinearLayoutManager(this)
-        manager.reverseLayout = true
-        recyclerMsgs.layoutManager = manager
         recyclerMsgs.adapter = messageAdapter
         messageAdapter.startListening()
+        setListeners()
     }
 
     private fun onMsgSubmitClicked() {
         val msgText = msgFormText.text.toString()
         msgFormText.text = null
-        auth.currentUser?.let {
-            addMessage(conversationID, msgText, conversation.palId, it)
+        auth.currentUser?.let { currentUser ->
+            addMessage(conversationID, msgText, conversation, currentUser)
                     .addOnSuccessListener(this) {
                         Log.d(TAG, "Message added")
 //                    hideKeyboard()
@@ -259,7 +243,7 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         }
 
     }
-    
+
     public override fun onStart() {
         super.onStart()
         if (::messageAdapter.isInitialized)
@@ -278,7 +262,6 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
         super.finish()
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
-
 
     companion object {
         val TAG = "DetailsActivity"
@@ -304,6 +287,32 @@ class DetailsActivity : AppCompatActivity(), View.OnTouchListener {
                 // Ignore all other requests.
             }
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_details, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.menu_block -> {
+
+                val uid = auth.currentUser?.uid!!
+                val palID = conversation.palId
+                val batch = FirebaseFirestore.getInstance().batch()
+                val docRefMe = getUserConversationsRef(uid).document(conversationID)
+                val docRefPal = getUserConversationsRef(palID).document(conversationID)
+
+                conversation.iBlockedHim = !conversation.iBlockedHim
+                batch.update(docRefMe, "iBlockedHim", conversation.iBlockedHim)
+                batch.update(docRefPal, "heBlockedMe", conversation.iBlockedHim)
+                batch.commit()
+
+
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
 }

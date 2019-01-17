@@ -7,7 +7,7 @@
     tools:context=".SearchActivity">
 
     <View
-        android:id="@+id/toolbar"
+        android:id="@+id/toolbarMain"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:background="@color/colorPrimary" />
@@ -21,16 +21,16 @@
         android:clickable="true"
         android:focusable="true"
         android:src="@drawable/ic_arrow_back"
-        app:layout_constraintBottom_toBottomOf="@+id/toolbar"
-        app:layout_constraintStart_toStartOf="@+id/toolbar"
-        app:layout_constraintTop_toTopOf="@+id/toolbar" />
+        app:layout_constraintBottom_toBottomOf="@+id/toolbarMain"
+        app:layout_constraintStart_toStartOf="@+id/toolbarMain"
+        app:layout_constraintTop_toTopOf="@+id/toolbarMain" />
 
     <View
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="4dp"
         android:background="@drawable/bg_shadow"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
+        app:layout_constraintTop_toBottomOf="@+id/toolbarMain" />
 
     <EditText
         android:id="@+id/editText"
@@ -39,9 +39,9 @@
         android:layout_marginStart="8dp"
         android:hint="Search"
         android:inputType="text"
-        app:layout_constraintBottom_toBottomOf="@+id/toolbar"
+        app:layout_constraintBottom_toBottomOf="@+id/toolbarMain"
         app:layout_constraintStart_toEndOf="@+id/backBtn"
-        app:layout_constraintTop_toTopOf="@+id/toolbar" />
+        app:layout_constraintTop_toTopOf="@+id/toolbarMain" />
     <!--android:ems="5"-->
 
     <androidx.recyclerview.widget.RecyclerView
@@ -52,7 +52,7 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar"
+        app:layout_constraintTop_toBottomOf="@+id/toolbarMain"
         tools:listitem="@layout/search_item"
         tools:visibility="visible" />
 

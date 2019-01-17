@@ -10,8 +10,7 @@
     <color name="greySecondary">#8B000000</color>
     <color name="greyDisabled">#61000000</color>
 
-    <color name="gray2">#10000000</color>
-    <color name="gray4">#20761F6F</color>
+    <color name="grayE0">#E0E0E0</color>
 
 
 </resources>

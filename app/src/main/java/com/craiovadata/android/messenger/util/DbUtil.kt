@@ -2,6 +2,7 @@ package com.craiovadata.android.messenger.util
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.SearchedUser
 import com.craiovadata.android.messenger.model.User
@@ -43,7 +44,7 @@ object DbUtil {
         val usrRef = db.collection(USERS).document(uid)
         batch.set(usrRef, user)
 
-        // TODO build keywords in the cloud (functions)
+        // TODO build keywords with cloud functions
         val keywords = Util.getKeywords(email, displayName)
         val keywordsRef = db.document("$USER_KEYWORDS/$uid")
         val searchUser = SearchedUser(displayName, photoUrl, keywords)
@@ -60,27 +61,34 @@ object DbUtil {
         batch.commit()
     }
 
-    fun addMessage(convID: String, msgText: String, palId: String, currentUser: FirebaseUser): Task<Void> {
+    fun addMessage(convID: String, msgText: String, conversation: Conversation, currentUser: FirebaseUser): Task<Void> {
+        val palId = conversation.palId
+        val uid = currentUser.uid
+
         val message = Message(currentUser, msgText)
-        val msgRef = getRoomsRef(currentUser.uid).document(convID).collection(MESSAGES).document()
+        val msgRef = getUserConversationsRef(uid).document(convID).collection(MESSAGES).document()
         val batch = FirebaseFirestore.getInstance().batch()
 
         batch.set(msgRef, message)
-        batch.set(getRoomsRef(palId).document(convID).collection(MESSAGES).document(msgRef.id), message)
 
-        val usr = HashMap<String, Any>()
-        currentUser.displayName?.let { usr.put(LAST_MESSAGE_AUTHOR, it) }
-        usr.put(LAST_MESSAGE, msgText)
+        val map = HashMap<String, Any>()
+        currentUser.displayName?.let { map.put(LAST_MESSAGE_AUTHOR, it) }
+        map[LAST_MESSAGE] = msgText
 
-        batch.update(getRoomsRef(currentUser.uid).document(convID), usr)
-        batch.update(getRoomsRef(palId).document(convID), usr)
+        batch.update(getUserConversationsRef(uid).document(convID), map)
+
+        if (!conversation.heBlockedMe) {
+            batch.update(getUserConversationsRef(palId).document(convID), map)
+            batch.set(getUserConversationsRef(palId).document(convID).collection(MESSAGES).document(msgRef.id), message)
+        }
+
+
 
         return batch.commit()
     }
 
-    fun getRoomsRef(uid: String): CollectionReference {
-        val firestore = FirebaseFirestore.getInstance()
-        return firestore.collection("${USERS}/${uid}/${CONVERSATIONS}")
+    fun getUserConversationsRef(uid: String): CollectionReference {
+        return FirebaseFirestore.getInstance().collection("${USERS}/${uid}/${CONVERSATIONS}")
     }
 
 }

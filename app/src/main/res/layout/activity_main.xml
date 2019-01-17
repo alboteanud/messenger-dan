@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#E0E0E0">
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
 
-    <!-- Main Restaurants recycler -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerConversations"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
-        tools:listitem="@layout/item_room" />
+        android:theme="@style/AppTheme.AppBarOverlay">
 
-    <!-- Shadow below toolbar -->
-    <View
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbarMain"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:id="@+id/frameLayoutMessages"
         android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:background="@drawable/bg_shadow" />
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <include layout="@layout/conversation_list" />
+    </FrameLayout>
 
-    <ProgressBar
-        android:id="@+id/progressLoading"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/recyclerConversations"
-        android:layout_alignBottom="@+id/recyclerConversations"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
-
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

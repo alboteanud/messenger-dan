@@ -20,6 +20,5 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:ellipsize="end"
-        tools:text="I thought it was pretty great! hdkjhfhd I thought it was pretty great! hdkjhfhdI thought it was pretty great! hdkjhfhdI thought it was pretty great! hdkjhfhd " />
-
+        tools:text="I thought it was pretty great!"/>
 </LinearLayout>

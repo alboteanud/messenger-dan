@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
 import com.craiovadata.android.messenger.util.KEYWORDS
@@ -17,7 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_search.*
 
 
-class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWatcher {
+class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener, TextWatcher {
 
     lateinit var searchRef: CollectionReference
     lateinit var searchAdapter: SearchAdapter
@@ -69,8 +70,13 @@ class SearchActivity : Activity(), SearchAdapter.OnUserSelectedListener, TextWat
         val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
         intent.putExtra(KEY_USER_ID, documentSnapshot.id)
         startActivity(intent)
-        overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
         finish()
+    }
+
+    // onBackPressed
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
     }
 
 

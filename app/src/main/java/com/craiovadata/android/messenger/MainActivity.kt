@@ -2,16 +2,13 @@ package com.craiovadata.android.messenger
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.ConversationAdapter
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
@@ -26,57 +23,34 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
-import android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-
-
+import kotlinx.android.synthetic.main.conversation_list.*
 
 class MainActivity : AppCompatActivity(),
-        ConversationAdapter.OnRoomSelectedListener,
-        FirebaseAuth.AuthStateListener {
+        ConversationAdapter.OnConversationSelectedListener {
 
     private lateinit var conversationAdapter: ConversationAdapter
     private lateinit var viewModel: MainActivityViewModel
     private lateinit var auth: FirebaseAuth
-    private var uid: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-
-        auth = FirebaseAuth.getInstance()
-
-        val currentUser = auth.currentUser
-
-        if (currentUser != null) {
-            uid = currentUser.uid
-            supportActionBar?.title = currentUser.displayName
-            initListAdapter(uid)
-        }
-
+        setSupportActionBar(toolbarMain)
         checkPlayServices(this)
+        viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
+        auth = FirebaseAuth.getInstance()
 
     }
 
     public override fun onStart() {
         super.onStart()
-
-        if (shouldStartSignIn())
-            startSignIn()
-
-        auth.addAuthStateListener(this)
-
-        if (::conversationAdapter.isInitialized)
-            conversationAdapter.startListening()
-
+        if (shouldStartSignIn()) startSignIn()
+        else setListAdapter()
     }
 
     public override fun onStop() {
         super.onStop()
-        auth.removeAuthStateListener(this)
-        if (::conversationAdapter.isInitialized)
-            conversationAdapter.stopListening()
+        if (::conversationAdapter.isInitialized) conversationAdapter.stopListening()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -89,26 +63,30 @@ class MainActivity : AppCompatActivity(),
             R.id.menu_search -> {
                 val intent = Intent(this@MainActivity, SearchActivity::class.java)
                 startActivity(intent)
+                overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
             }
             R.id.menu_sign_out -> {
+                auth.currentUser?.let { removeRegistration(this@MainActivity, it.uid) }
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
             }
             R.id.menu_test -> {
-         
+
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun initListAdapter(uid: String) {
-        val ref = FirebaseFirestore.getInstance().collection("$USERS/$uid/$CONVERSATIONS")
-        val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
+    private fun setListAdapter() {
+        val user = auth.currentUser ?: return
+        if (!::conversationAdapter.isInitialized) {
+            toolbarMain.title = user.displayName
+            val ref = FirebaseFirestore.getInstance().collection("$USERS/${user.uid}/$CONVERSATIONS")
+            val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
 
-        conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
-        recyclerConversations.layoutManager = LinearLayoutManager(this)
-        recyclerConversations.adapter = conversationAdapter
-
+            conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
+            recyclerConversations.adapter = conversationAdapter
+        }
         conversationAdapter.startListening()
     }
 
@@ -119,13 +97,8 @@ class MainActivity : AppCompatActivity(),
             viewModel.isSigningIn = false
 
             if (resultCode == Activity.RESULT_OK) {
-                // Successfully signed in
-                val currentUser = FirebaseAuth.getInstance().currentUser
-                if (currentUser != null) {
-                    uid = currentUser.uid
-                    writeNewUser(this@MainActivity, currentUser)
-                    initListAdapter(currentUser.uid)
-
+                auth.currentUser?.let {
+                    writeNewUser(this@MainActivity, it)
                 }
             } else {
                 if (response == null) {
@@ -140,9 +113,9 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onRoomSelected(room: DocumentSnapshot) {
+    override fun onConversationSelected(documentSnapshot: DocumentSnapshot) {
         val intent = Intent(this, DetailsActivity::class.java)
-        intent.putExtra(KEY_ROOM_ID, room.reference.id)
+        intent.putExtra(KEY_ROOM_ID, documentSnapshot.reference.id)
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
@@ -151,22 +124,20 @@ class MainActivity : AppCompatActivity(),
         return !viewModel.isSigningIn && auth.currentUser == null
     }
 
-    override fun onAuthStateChanged(auth: FirebaseAuth) {
-        if (auth.currentUser == null && !uid.equals("")) {
-            removeRegistration(this@MainActivity, uid)
-        }
-    }
-
     private fun startSignIn() {
         // Sign in with FirebaseUI
-        val intent = AuthUI.getInstance().createSignInIntentBuilder()
+        val intent = AuthUI.getInstance()
+                .createSignInIntentBuilder()
+                .setLogo(R.drawable.ic_person_black_24dp)
+                .setTheme(R.style.AppTheme)
+                .setTosAndPrivacyPolicyUrls(
+                        "https://example.com/terms.html",
+                        "https://sunshine-f15bf.firebaseapp.com/")
                 .setAvailableProviders(listOf(
                         AuthUI.IdpConfig.GoogleBuilder().build(),
-//                        AuthUI.IdpConfig.EmailBuilder().build(),
-//                        AuthUI.IdpConfig.PhoneBuilder().build(),
-                        AuthUI.IdpConfig.FacebookBuilder().build()
-//                        AuthUI.IdpConfig.TwitterBuilder().build()
+                        AuthUI.IdpConfig.EmailBuilder().build()
                 ))
+                .enableAnonymousUsersAutoUpgrade()
                 .setIsSmartLockEnabled(false)
                 .build()
 
@@ -181,9 +152,13 @@ class MainActivity : AppCompatActivity(),
                 .setCancelable(false)
                 .setPositiveButton(R.string.option_retry) { _, _ -> startSignIn() }
                 .setNegativeButton(R.string.option_exit) { _, _ -> finish() }.create()
-
         dialog.show()
     }
 
+    // onBackPressed
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+    }
 
 }

@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
+import com.craiovadata.android.messenger.model.GlideApp
 import com.craiovadata.android.messenger.model.Message
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.Query
@@ -44,8 +45,9 @@ open class MessageAdapter(query: Query, private val user: FirebaseUser) : Firest
             if (user.uid == message.userId) {
 //                itemView.messageItemText.setBackgroundColor(itemView.context.getColor(R.color.gray2))
             }
-            Glide.with(itemView.context)
+            GlideApp.with(itemView.context)
                     .load(message.photoUrl)
+                    .placeholder(R.drawable.ic_person_black_24dp)
                     .into(itemView.messageItemImageView)
         }
 

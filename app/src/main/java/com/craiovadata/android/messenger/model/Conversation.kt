@@ -12,6 +12,8 @@ data class Conversation(
         var msgAuthor: String? = "",
         var lastMessage: String? = "",
         @ServerTimestamp var created: Date? = null,
-        @ServerTimestamp var msgTimestamp: Date? = null
-//        var participants: List<HashMap<String, Any>> = listOf(),
+        @ServerTimestamp var msgTimestamp: Date? = null,
+        var heBlockedMe: Boolean = false,
+        var iBlockedHim: Boolean = false
+//        var blockedMap: HashMap<String, Any> = HashMap()
 )

@@ -9,19 +9,19 @@ import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.Conversation
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
-import kotlinx.android.synthetic.main.item_room.view.*
+import kotlinx.android.synthetic.main.item_conversation.view.*
 
-open class ConversationAdapter(query: Query, private val listener: OnRoomSelectedListener) :
+open class ConversationAdapter(query: Query, private val listener: OnConversationSelectedListener) :
         FirestoreAdapter<ConversationAdapter.ViewHolder>(query) {
 
-    interface OnRoomSelectedListener {
-        fun onRoomSelected(room: DocumentSnapshot)
+    interface OnConversationSelectedListener {
+        fun onConversationSelected(documentSnapshot: DocumentSnapshot)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
 
-        return ViewHolder(inflater.inflate(R.layout.item_room, parent, false))
+        return ViewHolder(inflater.inflate(R.layout.item_conversation, parent, false))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -32,7 +32,7 @@ open class ConversationAdapter(query: Query, private val listener: OnRoomSelecte
 
         fun bind(
                 snapshot: DocumentSnapshot,
-                listener: OnRoomSelectedListener?
+                listener: OnConversationSelectedListener?
         ) {
 
             val conversation = snapshot.toObject(Conversation::class.java) ?: return
@@ -50,7 +50,7 @@ open class ConversationAdapter(query: Query, private val listener: OnRoomSelecte
 
             // Click listener
             itemView.setOnClickListener {
-                listener?.onRoomSelected(snapshot)
+                listener?.onConversationSelected(snapshot)
             }
         }
     }
