@@ -1,6 +1,5 @@
 package com.craiovadata.android.messenger
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -9,11 +8,9 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
-import com.craiovadata.android.messenger.util.KEYWORDS
-import com.craiovadata.android.messenger.util.KEY_USER_ID
-import com.craiovadata.android.messenger.util.USER_KEYWORDS
+import com.craiovadata.android.messenger.model.SearchedUser
+import com.craiovadata.android.messenger.util.*
 import com.google.firebase.firestore.CollectionReference
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_search.*
 
@@ -66,9 +63,12 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         onBackPressed()
     }
 
-    override fun onUserSelected(documentSnapshot: DocumentSnapshot) {
+    override fun onUserSelected(searchedUser: SearchedUser, id: String) {
         val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
-        intent.putExtra(KEY_USER_ID, documentSnapshot.id)
+        intent.putExtra(KEY_USER_ID, id)
+        intent.putExtra(KEY_USER_NAME, searchedUser.name)
+        intent.putExtra(KEY_USER_PHOTO_URL, searchedUser.photoUrl)
+
         startActivity(intent)
         finish()
     }

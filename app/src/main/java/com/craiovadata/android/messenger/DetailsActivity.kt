@@ -15,18 +15,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.model.Conversation
+import com.craiovadata.android.messenger.model.Message
 import com.craiovadata.android.messenger.model.User
 import com.craiovadata.android.messenger.util.*
-import com.craiovadata.android.messenger.util.DbUtil.addMessage
-import com.craiovadata.android.messenger.util.DbUtil.getUserConversationsRef
 import com.google.android.gms.tasks.Continuation
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.UploadTask
 import kotlinx.android.synthetic.main.activity_details.*
@@ -34,42 +32,52 @@ import kotlinx.android.synthetic.main.layout_enter_msg.*
 import kotlinx.android.synthetic.main.message_list.*
 import java.io.File
 import java.io.IOException
+import java.util.HashMap
 
 private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
 class DetailsActivity : AppCompatActivity() {
 
-    private lateinit var conversationID: String
-    private lateinit var messageAdapter: MessageAdapter
+    private var palID: String = ""
+    private var palName: String = ""
+    private var palPhotoUrl: String = ""
+    private lateinit var adapter: MessageAdapter
     private lateinit var conversation: Conversation
-    private lateinit var auth: FirebaseAuth
+    private lateinit var user: FirebaseUser
     private var mRecorder: MediaRecorder? = null
     private var mFileName: String = ""
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
         setSupportActionBar(toolbar_msgs)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        auth = FirebaseAuth.getInstance()
-        auth.currentUser?.let { currentUser ->
-            if (intent.hasExtra(KEY_ROOM_ID)) {
-                conversationID = intent.extras?.getString(KEY_ROOM_ID)!!
-                fetchConversation(conversationID, currentUser)
-                initMsgList(conversationID, currentUser)
-            } else if (intent.hasExtra(KEY_USER_ID)) {
-                val palUid = intent.extras?.getString(KEY_USER_ID)
-                palUid?.let { palId -> findConversation(palId, currentUser) }
-            }
+        palID = intent.extras?.getString(KEY_USER_ID)!!
+        palName = intent.extras?.getString(KEY_USER_NAME)!!
+        palPhotoUrl = intent.extras?.getString(KEY_USER_PHOTO_URL)!!
+
+        title = palName
+        firestore = FirebaseFirestore.getInstance()
+        updateHeaderUI()
+
+        setButtonsListeners()
+    }
+
+
+    public override fun onStart() {
+        super.onStart()
+        FirebaseAuth.getInstance().currentUser?.let {
+            user = it
+            adapter = object : MessageAdapter(getMsgsQuery(), user) {}
+            recyclerMsgs.adapter = adapter
+            adapter.startListening()
         }
-
 
     }
 
-    private fun setListeners() {
+    private fun setButtonsListeners() {
         sendButton.setOnClickListener { onMsgSubmitClicked() }
-
         recordButton.setOnTouchListener(View.OnTouchListener { view, motionEvent ->
             when (motionEvent.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -149,16 +157,8 @@ class DetailsActivity : AppCompatActivity() {
                 val downloadUri = task.result
                 Log.d(TAG, "uploaded succesfully at: " + downloadUri)
                 if (downloadUri != null) {
-                    auth.currentUser?.let {
-                        //                        startPlaying(downloadUri.toString())
-                        addMessage(conversationID, downloadUri.toString(), conversation, it)
-                                .addOnSuccessListener(this) {
-                                    Log.d(TAG, "Message added")
-                                    recyclerMsgs.smoothScrollToPosition(0)
-
-                                }
-                                .addOnFailureListener(this) { e -> Log.w(TAG, "Add message failed", e) }
-                    }
+                    val txt = downloadUri.toString()
+                    addMessage(txt)
                 }
             } else {
                 // Handle failures
@@ -166,95 +166,27 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchConversation(convID: String, currentUser: FirebaseUser) {
-        getUserConversationsRef(currentUser.uid).document(convID).get().addOnSuccessListener { snapshot ->
-            if (snapshot != null) {
-                conversation = snapshot.toObject(Conversation::class.java)!!
-                initHeaderUI(conversation)
-            }
-        }
-    }
-
-    private fun findConversation(palUid: String, currentUser: FirebaseUser) {
-        getUserConversationsRef(currentUser.uid).whereEqualTo(PAL_ID, palUid).limit(1).get()
-                .addOnSuccessListener { snapshot ->
-
-                    if (snapshot == null || snapshot.isEmpty) {
-                        Log.d(TAG, "No such document. Creating new conversation.")
-                        conversationID = getUserConversationsRef(currentUser.uid).document().id
-                        setNewRoom(conversationID, palUid, currentUser.uid) // incl. updateHeadUI
-                        setNewRoom(conversationID, currentUser.uid, palUid)
-                    } else {
-                        val document = snapshot.documents[0]
-                        conversationID = document.id
-                        conversation = document.toObject(Conversation::class.java)!!
-                        initHeaderUI(conversation)
-                    }
-                    initMsgList(conversationID, currentUser)
-                }
-
-    }
-
-    private fun setNewRoom(roomID: String, sourceUid: String, destUid: String) {
-        FirebaseFirestore.getInstance().document("${USERS}/${sourceUid}").get()
+    private fun updateHeaderUI() {
+        firestore.document("$USERS/$palID").get()
                 .addOnSuccessListener { snapshot ->
                     if (snapshot != null) {
                         val user = snapshot.toObject(User::class.java)
                         if (user != null) {
-                            val newRoom = Conversation(user.name, snapshot.id, user.photoUrl)
-                            if (destUid == auth.currentUser?.uid) {
-                                conversation = newRoom
-                                initHeaderUI(conversation)
-                                FirebaseMessaging.getInstance().subscribeToTopic(roomID)
-                            }
-                            getUserConversationsRef(destUid).document(roomID).set(newRoom)
+                            title = user.name
                         }
                     }
                 }
     }
 
-    private fun initHeaderUI(conversation: Conversation?) {
-        toolbar_msgs.title = conversation?.palName
-    }
-
-    private fun initMsgList(conversationID: String, user: FirebaseUser) {
-        val query = getUserConversationsRef(user.uid).document(conversationID).collection(MESSAGES)
-                .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
-                .limit(50L)
-
-        messageAdapter = object : MessageAdapter(query, user) {}
-        recyclerMsgs.adapter = messageAdapter
-        messageAdapter.startListening()
-        setListeners()
-    }
-
     private fun onMsgSubmitClicked() {
         val msgText = msgFormText.text.toString()
+        addMessage(msgText)
         msgFormText.text = null
-        auth.currentUser?.let { currentUser ->
-            addMessage(conversationID, msgText, conversation, currentUser)
-                    .addOnSuccessListener(this) {
-                        Log.d(TAG, "Message added")
-//                    hideKeyboard()
-                        recyclerMsgs.smoothScrollToPosition(0)
-
-                    }
-                    .addOnFailureListener(this) { e -> Log.w(TAG, "Add message failed", e) }
-        }
-
-    }
-
-    public override fun onStart() {
-        super.onStart()
-        if (::messageAdapter.isInitialized)
-            messageAdapter.startListening()
-
     }
 
     public override fun onStop() {
         super.onStop()
-        if (::messageAdapter.isInitialized)
-            messageAdapter.stopListening()
+        if (::adapter.isInitialized) adapter.stopListening()
     }
 
     // onBackPressed
@@ -298,21 +230,62 @@ class DetailsActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.menu_block -> {
 
-                val uid = auth.currentUser?.uid!!
-                val palID = conversation.palId
-                val batch = FirebaseFirestore.getInstance().batch()
-                val docRefMe = getUserConversationsRef(uid).document(conversationID)
-                val docRefPal = getUserConversationsRef(palID).document(conversationID)
-
+                val batch = firestore.batch()
                 conversation.iBlockedHim = !conversation.iBlockedHim
-                batch.update(docRefMe, "iBlockedHim", conversation.iBlockedHim)
-                batch.update(docRefPal, "heBlockedMe", conversation.iBlockedHim)
+                batch.update(getMyConversationRef(), "iBlockedHim", conversation.iBlockedHim)
+                batch.update(getPalConversationRef(), "heBlockedMe", conversation.iBlockedHim)
                 batch.commit()
-
-
             }
         }
         return super.onOptionsItemSelected(item)
     }
+
+    private fun addMessage(msgText: String) {
+        val message = Message(user, msgText)
+
+        val myMsgRef = getMyConversationRef().collection(MESSAGES).document()
+        val palMsgRef = getPalConversationRef().collection(MESSAGES).document(myMsgRef.id)
+
+        val batch = firestore.batch()
+
+        val mapForMe = HashMap<String, Any>()
+        mapForMe[LAST_MESSAGE_AUTHOR] = user.displayName!!
+        mapForMe[LAST_MESSAGE] = msgText
+        mapForMe[PAL_ID] = palID
+        mapForMe[PAL_NAME] = palName
+        mapForMe[PAL_PHOTO_URL] = palPhotoUrl
+
+        val mapForPal = HashMap<String, Any>()
+        mapForPal[LAST_MESSAGE_AUTHOR] = user.displayName!!
+        mapForPal[LAST_MESSAGE] = msgText
+        mapForPal[PAL_ID] = user.uid
+        mapForPal[PAL_NAME] = user.displayName!!
+        mapForPal[PAL_PHOTO_URL] = user.photoUrl!!.toString()
+
+        batch.set(myMsgRef, message)
+        batch.set(palMsgRef, message)
+
+        batch.set(getMyConversationRef(), mapForMe)
+        batch.set(getPalConversationRef(), mapForPal)
+
+//        if (!conversation.heBlockedMe) {
+        batch.commit()
+    }
+
+    private fun getMyConversationRef(): DocumentReference {
+        return firestore.document("$USERS/${user.uid}/$CONVERSATIONS/$palID")
+    }
+
+    private fun getPalConversationRef(): DocumentReference {
+        return firestore.document("$USERS/$palID/$CONVERSATIONS/${user.uid}")
+    }
+
+
+    private fun getMsgsQuery(): Query {
+        return getMyConversationRef().collection(MESSAGES)
+                .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
+                .limit(50L)
+    }
+
 
 }

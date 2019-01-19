@@ -16,7 +16,7 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
 
     interface OnUserSelectedListener {
 
-        fun onUserSelected(documentSnapshot: DocumentSnapshot)
+        fun onUserSelected(searchedUser: SearchedUser, id: String)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,24 +35,21 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
                 listener: OnUserSelectedListener?
         ) {
 
-            val user = snapshot.toObject(SearchedUser::class.java)
-            if (user == null) {
-                return
-            }
+            val searchedUser = snapshot.toObject(SearchedUser::class.java) ?: return
 
 //            val resources = itemView.resources
 
             // Load image
             Glide.with(itemView.imageSearch.context)
-                    .load(user.photoUrl)
+                    .load(searchedUser.photoUrl)
                     .into(itemView.imageSearch)
 
 
-            itemView.textSearch.text = user.name
+            itemView.textSearch.text = searchedUser.name
 
             // Click listener
             itemView.setOnClickListener {
-                listener?.onUserSelected(snapshot)
+                listener?.onUserSelected(searchedUser, snapshot.id)
             }
         }
     }

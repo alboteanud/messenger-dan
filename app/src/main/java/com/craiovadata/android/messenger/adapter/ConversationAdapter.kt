@@ -1,5 +1,6 @@
 package com.craiovadata.android.messenger.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,27 +31,30 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        fun bind(
-                snapshot: DocumentSnapshot,
-                listener: OnConversationSelectedListener?
-        ) {
+        fun bind(documentSnapshot: DocumentSnapshot, listener: OnConversationSelectedListener?) {
 
-            val conversation = snapshot.toObject(Conversation::class.java) ?: return
-
+//            val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
+            Log.d("TAG", "DocumentSnapshot data: " + documentSnapshot.data)
 //            val resources = itemView.resources
 
+            val palName = documentSnapshot.data!!["palName"]!!.toString()
+            val palPhotoUrl = documentSnapshot.data!!["palPhotoUrl"]!!.toString()
+            val msgAuthor = documentSnapshot.data!!["msgAuthor"]!!.toString()
+            val lastMessage = documentSnapshot.data!!["lastMessage"]!!.toString()
+
             Glide.with(itemView.roomItemImage.context)
-                    .load(conversation.palPhotoUrl)
+                    .load(palPhotoUrl)
                     .into(itemView.roomItemImage)
 
-            itemView.roomName.text = conversation.palName
-            itemView.lastMsg.text = conversation.lastMessage
+            itemView.roomName.text = palName
 
-            itemView.author.text = conversation.msgAuthor
+            itemView.lastMsg.text = lastMessage
+
+            itemView.author.text = msgAuthor
 
             // Click listener
             itemView.setOnClickListener {
-                listener?.onConversationSelected(snapshot)
+                listener?.onConversationSelected(documentSnapshot)
             }
         }
     }

@@ -32,17 +32,19 @@ object DbUtil {
         return context.getSharedPreferences("_", MODE_PRIVATE).getString(TOKEN, FirebaseInstanceId.getInstance().token)
     }
 
-    fun writeNewUser(context: Context, firebaseUser: FirebaseUser) {
+    fun writeNewUser(context: Context, firebaseUser: FirebaseUser?) {
+        if (firebaseUser==null) return
+
         val db = FirebaseFirestore.getInstance()
         val email = firebaseUser.email.toString()
         val displayName = firebaseUser.displayName.toString()
         val photoUrl = firebaseUser.photoUrl.toString()
 
-        val user = User(email, displayName, photoUrl)
+        val userM = User(email, displayName, photoUrl)
         val uid = firebaseUser.uid
         val batch = db.batch()
         val usrRef = db.collection(USERS).document(uid)
-        batch.set(usrRef, user)
+        batch.set(usrRef, userM)
 
         // TODO build keywords with cloud functions
         val keywords = Util.getKeywords(email, displayName)
@@ -61,34 +63,6 @@ object DbUtil {
         batch.commit()
     }
 
-    fun addMessage(convID: String, msgText: String, conversation: Conversation, currentUser: FirebaseUser): Task<Void> {
-        val palId = conversation.palId
-        val uid = currentUser.uid
 
-        val message = Message(currentUser, msgText)
-        val msgRef = getUserConversationsRef(uid).document(convID).collection(MESSAGES).document()
-        val batch = FirebaseFirestore.getInstance().batch()
-
-        batch.set(msgRef, message)
-
-        val map = HashMap<String, Any>()
-        currentUser.displayName?.let { map.put(LAST_MESSAGE_AUTHOR, it) }
-        map[LAST_MESSAGE] = msgText
-
-        batch.update(getUserConversationsRef(uid).document(convID), map)
-
-        if (!conversation.heBlockedMe) {
-            batch.update(getUserConversationsRef(palId).document(convID), map)
-            batch.set(getUserConversationsRef(palId).document(convID).collection(MESSAGES).document(msgRef.id), message)
-        }
-
-
-
-        return batch.commit()
-    }
-
-    fun getUserConversationsRef(uid: String): CollectionReference {
-        return FirebaseFirestore.getInstance().collection("${USERS}/${uid}/${CONVERSATIONS}")
-    }
 
 }

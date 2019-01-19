@@ -19,6 +19,7 @@ import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -30,22 +31,31 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var conversationAdapter: ConversationAdapter
     private lateinit var viewModel: MainActivityViewModel
-    private lateinit var auth: FirebaseAuth
+    private lateinit var user: FirebaseUser
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbarMain)
+
+        firestore = FirebaseFirestore.getInstance()
         checkPlayServices(this)
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-        auth = FirebaseAuth.getInstance()
 
     }
 
     public override fun onStart() {
         super.onStart()
-        if (shouldStartSignIn()) startSignIn()
-        else setListAdapter()
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        if (firebaseUser == null) {
+            if (!viewModel.isSigningIn)
+                startSignIn()
+        } else {
+            user = firebaseUser
+            title = user.displayName
+            setListAdapter()
+        }
     }
 
     public override fun onStop() {
@@ -66,7 +76,7 @@ class MainActivity : AppCompatActivity(),
                 overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
             }
             R.id.menu_sign_out -> {
-                auth.currentUser?.let { removeRegistration(this@MainActivity, it.uid) }
+                removeRegistration(this@MainActivity, user.uid)
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
             }
@@ -78,13 +88,12 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun setListAdapter() {
-        val user = auth.currentUser ?: return
-        if (!::conversationAdapter.isInitialized) {
-            toolbarMain.title = user.displayName
-            val ref = FirebaseFirestore.getInstance().collection("$USERS/${user.uid}/$CONVERSATIONS")
-            val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
 
-            conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
+        if (!::conversationAdapter.isInitialized) {
+            val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
+//            val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
+
+            conversationAdapter = object : ConversationAdapter(ref, this@MainActivity) {}
             recyclerConversations.adapter = conversationAdapter
         }
         conversationAdapter.startListening()
@@ -97,9 +106,9 @@ class MainActivity : AppCompatActivity(),
             viewModel.isSigningIn = false
 
             if (resultCode == Activity.RESULT_OK) {
-                auth.currentUser?.let {
-                    writeNewUser(this@MainActivity, it)
-                }
+
+                writeNewUser(this@MainActivity, user)
+
             } else {
                 if (response == null) {
                     // User pressed the back button.
@@ -115,14 +124,13 @@ class MainActivity : AppCompatActivity(),
 
     override fun onConversationSelected(documentSnapshot: DocumentSnapshot) {
         val intent = Intent(this, DetailsActivity::class.java)
-        intent.putExtra(KEY_ROOM_ID, documentSnapshot.reference.id)
+        intent.putExtra(KEY_USER_ID, documentSnapshot.reference.id)
+        intent.putExtra(KEY_USER_NAME, documentSnapshot.data!!["palName"]!!.toString())
+        intent.putExtra(KEY_USER_PHOTO_URL, documentSnapshot.data!!["palPhotoUrl"]!!.toString())
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
 
-    private fun shouldStartSignIn(): Boolean {
-        return !viewModel.isSigningIn && auth.currentUser == null
-    }
 
     private fun startSignIn() {
         // Sign in with FirebaseUI
