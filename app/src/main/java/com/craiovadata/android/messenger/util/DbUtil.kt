@@ -49,7 +49,7 @@ object DbUtil {
         // TODO build keywords with cloud functions
         val keywords = Util.getKeywords(email, displayName)
         val keywordsRef = db.document("$USER_KEYWORDS/$uid")
-        val searchUser = SearchedUser(displayName, photoUrl, keywords)
+        val searchUser = SearchedUser(uid, displayName, photoUrl, keywords)
         batch.set(keywordsRef, searchUser)
 
         val registrationToken = getRegistrationToken(context)

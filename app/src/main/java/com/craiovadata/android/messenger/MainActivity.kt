@@ -10,6 +10,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import com.craiovadata.android.messenger.adapter.ConversationAdapter
+import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
 import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
@@ -20,9 +21,7 @@ import com.firebase.ui.auth.ErrorCodes
 import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.conversation_list.*
 
@@ -42,6 +41,7 @@ class MainActivity : AppCompatActivity(),
         firestore = FirebaseFirestore.getInstance()
         checkPlayServices(this)
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
+
 
     }
 
@@ -122,15 +122,15 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onConversationSelected(documentSnapshot: DocumentSnapshot) {
+    override fun onConversationSelected(conversation: Conversation) {
         val intent = Intent(this, DetailsActivity::class.java)
-        intent.putExtra(KEY_USER_ID, documentSnapshot.reference.id)
-        intent.putExtra(KEY_USER_NAME, documentSnapshot.data!!["palName"]!!.toString())
-        intent.putExtra(KEY_USER_PHOTO_URL, documentSnapshot.data!!["palPhotoUrl"]!!.toString())
+                .putExtra(KEY_USER_ID, conversation.palId)
+                .putExtra(KEY_USER_NAME, conversation.palName)
+                .putExtra(KEY_USER_PHOTO_URL, conversation.palPhotoUrl)
+
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
-
 
     private fun startSignIn() {
         // Sign in with FirebaseUI

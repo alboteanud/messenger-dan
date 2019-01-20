@@ -64,7 +64,6 @@ class DetailsActivity : AppCompatActivity() {
         setButtonsListeners()
     }
 
-
     public override fun onStart() {
         super.onStart()
         FirebaseAuth.getInstance().currentUser?.let {
@@ -280,12 +279,10 @@ class DetailsActivity : AppCompatActivity() {
         return firestore.document("$USERS/$palID/$CONVERSATIONS/${user.uid}")
     }
 
-
     private fun getMsgsQuery(): Query {
         return getMyConversationRef().collection(MESSAGES)
                 .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
                 .limit(50L)
     }
-
 
 }

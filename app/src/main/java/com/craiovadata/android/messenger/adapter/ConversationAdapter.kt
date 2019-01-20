@@ -16,7 +16,7 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
         FirestoreAdapter<ConversationAdapter.ViewHolder>(query) {
 
     interface OnConversationSelectedListener {
-        fun onConversationSelected(documentSnapshot: DocumentSnapshot)
+        fun onConversationSelected(conversation: Conversation)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -33,28 +33,28 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
 
         fun bind(documentSnapshot: DocumentSnapshot, listener: OnConversationSelectedListener?) {
 
-//            val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
+            val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
             Log.d("TAG", "DocumentSnapshot data: " + documentSnapshot.data)
 //            val resources = itemView.resources
 
-            val palName = documentSnapshot.data!!["palName"]!!.toString()
-            val palPhotoUrl = documentSnapshot.data!!["palPhotoUrl"]!!.toString()
-            val msgAuthor = documentSnapshot.data!!["msgAuthor"]!!.toString()
-            val lastMessage = documentSnapshot.data!!["lastMessage"]!!.toString()
+//            val palName = documentSnapshot.data!!["palName"]!!.toString()
+//            val palPhotoUrl = documentSnapshot.data!!["palPhotoUrl"]!!.toString()
+//            val msgAuthor = documentSnapshot.data!!["msgAuthor"]!!.toString()
+//            val lastMessage = documentSnapshot.data!!["lastMessage"]!!.toString()
 
             Glide.with(itemView.roomItemImage.context)
-                    .load(palPhotoUrl)
+                    .load(conversation.palPhotoUrl)
                     .into(itemView.roomItemImage)
 
-            itemView.roomName.text = palName
+            itemView.roomName.text = conversation.palName
 
-            itemView.lastMsg.text = lastMessage
+            itemView.lastMsg.text = conversation.lastMessage
 
-            itemView.author.text = msgAuthor
+            itemView.author.text = conversation.msgAuthor
 
             // Click listener
             itemView.setOnClickListener {
-                listener?.onConversationSelected(documentSnapshot)
+                listener?.onConversationSelected(conversation)
             }
         }
     }

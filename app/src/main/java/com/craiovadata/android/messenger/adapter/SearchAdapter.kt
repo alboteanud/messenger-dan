@@ -16,7 +16,7 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
 
     interface OnUserSelectedListener {
 
-        fun onUserSelected(searchedUser: SearchedUser, id: String)
+        fun onUserSelected(searchedUser: SearchedUser)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -49,7 +49,7 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
 
             // Click listener
             itemView.setOnClickListener {
-                listener?.onUserSelected(searchedUser, snapshot.id)
+                listener?.onUserSelected(searchedUser)
             }
         }
     }

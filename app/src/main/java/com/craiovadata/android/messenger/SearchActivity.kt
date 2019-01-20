@@ -63,11 +63,11 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         onBackPressed()
     }
 
-    override fun onUserSelected(searchedUser: SearchedUser, id: String) {
+    override fun onUserSelected(searchedUser: SearchedUser) {
         val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
-        intent.putExtra(KEY_USER_ID, id)
-        intent.putExtra(KEY_USER_NAME, searchedUser.name)
-        intent.putExtra(KEY_USER_PHOTO_URL, searchedUser.photoUrl)
+                .putExtra(KEY_USER_ID, searchedUser.uid)
+                .putExtra(KEY_USER_NAME, searchedUser.name)
+                .putExtra(KEY_USER_PHOTO_URL, searchedUser.photoUrl)
 
         startActivity(intent)
         finish()
