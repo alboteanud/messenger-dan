@@ -3,6 +3,7 @@ package com.craiovadata.android.messenger
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.annotation.StringRes
@@ -12,9 +13,8 @@ import androidx.lifecycle.ViewModelProviders
 import com.craiovadata.android.messenger.adapter.ConversationAdapter
 import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.util.*
-import com.craiovadata.android.messenger.util.DbUtil.removeRegistration
-import com.craiovadata.android.messenger.util.DbUtil.writeNewUser
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
+import com.craiovadata.android.messenger.util.Util.removeRegistration
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -88,7 +88,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun setListAdapter() {
-
         if (!::conversationAdapter.isInitialized) {
             val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
 //            val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
@@ -106,9 +105,7 @@ class MainActivity : AppCompatActivity(),
             viewModel.isSigningIn = false
 
             if (resultCode == Activity.RESULT_OK) {
-
-                writeNewUser(this@MainActivity, user)
-
+//                writeNewUser(this@MainActivity, user)
             } else {
                 if (response == null) {
                     // User pressed the back button.
@@ -123,6 +120,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onConversationSelected(conversation: Conversation) {
+        Log.d(TAG, "onConvSelected" + conversation)
         val intent = Intent(this, DetailsActivity::class.java)
                 .putExtra(KEY_USER_ID, conversation.palId)
                 .putExtra(KEY_USER_NAME, conversation.palName)
@@ -167,6 +165,10 @@ class MainActivity : AppCompatActivity(),
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+    }
+
+    companion object {
+        val TAG = "MainActivity"
     }
 
 }

@@ -34,22 +34,15 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
         fun bind(documentSnapshot: DocumentSnapshot, listener: OnConversationSelectedListener?) {
 
             val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
-            Log.d("TAG", "DocumentSnapshot data: " + documentSnapshot.data)
+            Log.d("TAG", "DocumentSnapshot data: " + conversation)
 //            val resources = itemView.resources
-
-//            val palName = documentSnapshot.data!!["palName"]!!.toString()
-//            val palPhotoUrl = documentSnapshot.data!!["palPhotoUrl"]!!.toString()
-//            val msgAuthor = documentSnapshot.data!!["msgAuthor"]!!.toString()
-//            val lastMessage = documentSnapshot.data!!["lastMessage"]!!.toString()
 
             Glide.with(itemView.roomItemImage.context)
                     .load(conversation.palPhotoUrl)
                     .into(itemView.roomItemImage)
 
             itemView.roomName.text = conversation.palName
-
             itemView.lastMsg.text = conversation.lastMessage
-
             itemView.author.text = conversation.msgAuthor
 
             // Click listener

@@ -8,7 +8,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
-import com.craiovadata.android.messenger.model.SearchedUser
+import com.craiovadata.android.messenger.model.UserToSearch
 import com.craiovadata.android.messenger.util.*
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -27,7 +27,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         editText.requestFocus()
         backBtn.setOnClickListener { onBackArrowClicked() }
 
-        searchRef = FirebaseFirestore.getInstance().collection(USER_KEYWORDS)
+        searchRef = FirebaseFirestore.getInstance().collection(USERS)
 
         searchAdapter = object : SearchAdapter(null, this@SearchActivity) {
             override fun onDataChanged() {
@@ -49,7 +49,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         val str = s.toString()
         if (str.length < 4) return
         var query = searchRef.whereArrayContains(KEYWORDS, str)
-        query = query.limit(50L)
+        query = query.limit(20L)
         searchAdapter.setQuery(query)
     }
 
@@ -63,11 +63,11 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         onBackPressed()
     }
 
-    override fun onUserSelected(searchedUser: SearchedUser) {
+    override fun onUserSelected(userToSearch: UserToSearch) {
         val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
-                .putExtra(KEY_USER_ID, searchedUser.uid)
-                .putExtra(KEY_USER_NAME, searchedUser.name)
-                .putExtra(KEY_USER_PHOTO_URL, searchedUser.photoUrl)
+                .putExtra(KEY_USER_ID, userToSearch.uid)
+                .putExtra(KEY_USER_NAME, userToSearch.name)
+                .putExtra(KEY_USER_PHOTO_URL, userToSearch.photoUrl)
 
         startActivity(intent)
         finish()

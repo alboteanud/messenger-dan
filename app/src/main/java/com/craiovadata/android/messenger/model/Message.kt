@@ -6,21 +6,18 @@ import com.google.firebase.firestore.ServerTimestamp
 import java.util.*
 
 data class Message(
-        var userId: String? = null,
-        var displayName: String? = null,
+        var uid: String? = null,
+        var author: String? = null,
         var photoUrl: String? = null,
         var text: String? = null,
         @ServerTimestamp var timestamp: Date? = null
 ) {
 
     constructor(user: FirebaseUser, text: String) : this() {
-        this.userId = user.uid
-        this.displayName = user.displayName
-        this.photoUrl = user.photoUrl.toString()
-        if (TextUtils.isEmpty(this.displayName)) {
-            this.displayName = user.email
-        }
-
+        uid = user.uid
+        author = user.displayName
+        photoUrl = user.photoUrl.toString()
+        if (TextUtils.isEmpty(author)) author = user.email
         this.text = text
     }
 }

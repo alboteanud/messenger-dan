@@ -14,15 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.craiovadata.android.messenger.adapter.MessageAdapter
-import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.model.Message
-import com.craiovadata.android.messenger.model.User
 import com.craiovadata.android.messenger.util.*
 import com.google.android.gms.tasks.Continuation
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
@@ -32,34 +29,25 @@ import kotlinx.android.synthetic.main.layout_enter_msg.*
 import kotlinx.android.synthetic.main.message_list.*
 import java.io.File
 import java.io.IOException
-import java.util.HashMap
-
-private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
 class DetailsActivity : AppCompatActivity() {
 
-    private var palID: String = ""
-    private var palName: String = ""
-    private var palPhotoUrl: String = ""
-    private lateinit var adapter: MessageAdapter
-    private lateinit var conversation: Conversation
-    private lateinit var user: FirebaseUser
+
     private var mRecorder: MediaRecorder? = null
     private var mFileName: String = ""
+    private lateinit var adapter: MessageAdapter
+    private lateinit var user: FirebaseUser
     private lateinit var firestore: FirebaseFirestore
+    private lateinit var palId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
         setSupportActionBar(toolbar_msgs)
 
-        palID = intent.extras?.getString(KEY_USER_ID)!!
-        palName = intent.extras?.getString(KEY_USER_NAME)!!
-        palPhotoUrl = intent.extras?.getString(KEY_USER_PHOTO_URL)!!
-
-        title = palName
+        palId = intent.extras?.getString(KEY_USER_ID) ?: throw Exception("invalid palId")
+        title = intent.extras?.getString(KEY_USER_NAME)
         firestore = FirebaseFirestore.getInstance()
-        updateHeaderUI()
 
         setButtonsListeners()
     }
@@ -68,11 +56,10 @@ class DetailsActivity : AppCompatActivity() {
         super.onStart()
         FirebaseAuth.getInstance().currentUser?.let {
             user = it
-            adapter = object : MessageAdapter(getMsgsQuery(), user) {}
+            adapter = object : MessageAdapter(getQuery(), user) {}
             recyclerMsgs.adapter = adapter
             adapter.startListening()
         }
-
     }
 
     private fun setButtonsListeners() {
@@ -165,22 +152,12 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateHeaderUI() {
-        firestore.document("$USERS/$palID").get()
-                .addOnSuccessListener { snapshot ->
-                    if (snapshot != null) {
-                        val user = snapshot.toObject(User::class.java)
-                        if (user != null) {
-                            title = user.name
-                        }
-                    }
-                }
-    }
-
     private fun onMsgSubmitClicked() {
-        val msgText = msgFormText.text.toString()
-        addMessage(msgText)
-        msgFormText.text = null
+        val txt = msgFormText.text
+        if (!txt.isBlank()) {
+            addMessage(txt.toString())
+            msgFormText.text = null
+        }
     }
 
     public override fun onStop() {
@@ -229,60 +206,38 @@ class DetailsActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.menu_block -> {
 
-                val batch = firestore.batch()
-                conversation.iBlockedHim = !conversation.iBlockedHim
-                batch.update(getMyConversationRef(), "iBlockedHim", conversation.iBlockedHim)
-                batch.update(getPalConversationRef(), "heBlockedMe", conversation.iBlockedHim)
-                batch.commit()
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
     private fun addMessage(msgText: String) {
-        val message = Message(user, msgText)
+        val msg =  Message(user, msgText)
 
-        val myMsgRef = getMyConversationRef().collection(MESSAGES).document()
-        val palMsgRef = getPalConversationRef().collection(MESSAGES).document(myMsgRef.id)
+        val convRef = firestore.document("$USERS/${user.uid}/$CONVERSATIONS/$palId")
+        val convRefPal = firestore.document("$USERS/${palId}/$CONVERSATIONS/${user.uid}")
+        val msgRef = convRef.collection(MESSAGES).document()
+        val msgRefPal = convRefPal.collection(MESSAGES).document()
 
-        val batch = firestore.batch()
+        firestore.batch()
+                .set(msgRef, msg)
+                .set(msgRefPal, msg)
+                .commit()
+                .addOnSuccessListener { result ->
+                    Log.d(TAG, "Transaction success: " + result)
+                }.addOnFailureListener { e ->
+                    Log.w(TAG, "Transaction failure.", e)
+                }
 
-        val mapForMe = HashMap<String, Any>()
-        mapForMe[LAST_MESSAGE_AUTHOR] = user.displayName!!
-        mapForMe[LAST_MESSAGE] = msgText
-        mapForMe[PAL_ID] = palID
-        mapForMe[PAL_NAME] = palName
-        mapForMe[PAL_PHOTO_URL] = palPhotoUrl
-
-        val mapForPal = HashMap<String, Any>()
-        mapForPal[LAST_MESSAGE_AUTHOR] = user.displayName!!
-        mapForPal[LAST_MESSAGE] = msgText
-        mapForPal[PAL_ID] = user.uid
-        mapForPal[PAL_NAME] = user.displayName!!
-        mapForPal[PAL_PHOTO_URL] = user.photoUrl!!.toString()
-
-        batch.set(myMsgRef, message)
-        batch.set(palMsgRef, message)
-
-        batch.set(getMyConversationRef(), mapForMe)
-        batch.set(getPalConversationRef(), mapForPal)
-
-//        if (!conversation.heBlockedMe) {
-        batch.commit()
+        // TODO for test only
+        convRef.update("lastMessage", msgText)
     }
 
-    private fun getMyConversationRef(): DocumentReference {
-        return firestore.document("$USERS/${user.uid}/$CONVERSATIONS/$palID")
-    }
-
-    private fun getPalConversationRef(): DocumentReference {
-        return firestore.document("$USERS/$palID/$CONVERSATIONS/${user.uid}")
-    }
-
-    private fun getMsgsQuery(): Query {
-        return getMyConversationRef().collection(MESSAGES)
+    private fun getQuery(): Query {
+        val convRef = firestore.document("$USERS/${user.uid}/$CONVERSATIONS/$palId")
+        return convRef.collection(MESSAGES)
                 .orderBy(TIMESTAMP, Query.Direction.DESCENDING)
-                .limit(50L)
+                .limit(30L)
     }
 
 }

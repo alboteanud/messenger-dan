@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.model.SearchedUser
+import com.craiovadata.android.messenger.model.UserToSearch
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.search_item.view.*
@@ -16,7 +16,7 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
 
     interface OnUserSelectedListener {
 
-        fun onUserSelected(searchedUser: SearchedUser)
+        fun onUserSelected(userToSearch: UserToSearch)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,7 +35,7 @@ open class SearchAdapter(query: Query?, private val listener: OnUserSelectedList
                 listener: OnUserSelectedListener?
         ) {
 
-            val searchedUser = snapshot.toObject(SearchedUser::class.java) ?: return
+            val searchedUser = snapshot.toObject(UserToSearch::class.java) ?: return
 
 //            val resources = itemView.resources
 

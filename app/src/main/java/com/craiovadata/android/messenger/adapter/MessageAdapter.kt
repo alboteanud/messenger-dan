@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.GlideApp
 import com.craiovadata.android.messenger.model.Message
@@ -42,7 +41,7 @@ open class MessageAdapter(query: Query, private val user: FirebaseUser) : Firest
 
 //            if (message.timestamp != null) itemView.ratingItemDate.text = FORMAT.format(message.timestamp)
 
-            if (user.uid == message.userId) {
+            if (user.uid == message.uid) {
 //                itemView.messageItemText.setBackgroundColor(itemView.context.getColor(R.color.gray2))
             }
             GlideApp.with(itemView.context)

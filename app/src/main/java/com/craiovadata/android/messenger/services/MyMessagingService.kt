@@ -153,7 +153,7 @@ class MyMessagingService : FirebaseMessagingService(), MediaPlayer.OnPreparedLis
     private fun sendNotification(data: MutableMap<String, String>) {
         val intent = Intent(this, DetailsActivity::class.java)
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val convID = data["convID"]  // from functions
+        val convID = data["palId"]  // from functions
         intent.putExtra(KEY_ROOM_ID, convID)
 
         val pendingIntent: PendingIntent? = TaskStackBuilder.create(this)

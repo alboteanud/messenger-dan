@@ -4,7 +4,7 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 
 
 @IgnoreExtraProperties
-data class SearchedUser(
+data class UserToSearch(
         var uid: String = "",
         var name: String = "",
         var photoUrl: String = "",
