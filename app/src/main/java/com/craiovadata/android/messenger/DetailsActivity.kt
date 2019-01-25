@@ -212,25 +212,10 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun addMessage(msgText: String) {
-        val msg =  Message(user, msgText)
+        val msg = Message(user, msgText)
 
-        val convRef = firestore.document("$USERS/${user.uid}/$CONVERSATIONS/$palId")
-        val convRefPal = firestore.document("$USERS/${palId}/$CONVERSATIONS/${user.uid}")
-        val msgRef = convRef.collection(MESSAGES).document()
-        val msgRefPal = convRefPal.collection(MESSAGES).document()
-
-        firestore.batch()
-                .set(msgRef, msg)
-                .set(msgRefPal, msg)
-                .commit()
-                .addOnSuccessListener { result ->
-                    Log.d(TAG, "Transaction success: " + result)
-                }.addOnFailureListener { e ->
-                    Log.w(TAG, "Transaction failure.", e)
-                }
-
-        // TODO for test only
-        convRef.update("lastMessage", msgText)
+        val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS/$palId/$MESSAGES")
+        ref.add(msg)
     }
 
     private fun getQuery(): Query {

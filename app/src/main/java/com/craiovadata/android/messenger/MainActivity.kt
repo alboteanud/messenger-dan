@@ -22,6 +22,7 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.conversation_list.*
 
@@ -48,13 +49,13 @@ class MainActivity : AppCompatActivity(),
     public override fun onStart() {
         super.onStart()
         val firebaseUser = FirebaseAuth.getInstance().currentUser
-        if (firebaseUser == null) {
-            if (!viewModel.isSigningIn)
-                startSignIn()
-        } else {
+        if (firebaseUser != null) {
             user = firebaseUser
             title = user.displayName
             setListAdapter()
+
+        } else {
+            if (!viewModel.isSigningIn) startSignIn()
         }
     }
 
@@ -79,6 +80,8 @@ class MainActivity : AppCompatActivity(),
                 removeRegistration(this@MainActivity, user.uid)
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
+//                finish() not ok. On signIn goes home
+                recyclerConversations.adapter = null
             }
             R.id.menu_test -> {
 
@@ -88,11 +91,11 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun setListAdapter() {
-        if (!::conversationAdapter.isInitialized) {
+        if (recyclerConversations.adapter == null) {
             val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
-//            val query = ref.orderBy(LAST_MESSAGE_TIME, Query.Direction.DESCENDING)
+            val query = ref.orderBy(TIMESTAMP, Query.Direction.DESCENDING)
 
-            conversationAdapter = object : ConversationAdapter(ref, this@MainActivity) {}
+            conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
             recyclerConversations.adapter = conversationAdapter
         }
         conversationAdapter.startListening()

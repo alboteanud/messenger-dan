@@ -42,8 +42,8 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
                     .into(itemView.roomItemImage)
 
             itemView.roomName.text = conversation.palName
+            itemView.author.text = conversation.lastMessageAuthor
             itemView.lastMsg.text = conversation.lastMessage
-            itemView.author.text = conversation.msgAuthor
 
             // Click listener
             itemView.setOnClickListener {

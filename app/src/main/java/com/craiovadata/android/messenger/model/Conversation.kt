@@ -9,10 +9,10 @@ data class Conversation(
         var palName: String = "",
         var palId: String = "",
         var palPhotoUrl: String = "",
-        var msgAuthor: String? = "",
+        var lastMessageAuthor: String? = "",
         var lastMessage: String? = "",
         @ServerTimestamp var created: Date? = null,
-        @ServerTimestamp var msgTimestamp: Date? = null,
+        @ServerTimestamp var timestamp: Date? = null,
         var heBlockedMe: Boolean = false,
         var iBlockedHim: Boolean = false
 //        var blockedMap: HashMap<String, Any> = HashMap()
