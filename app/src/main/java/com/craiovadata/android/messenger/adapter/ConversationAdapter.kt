@@ -1,13 +1,15 @@
 package com.craiovadata.android.messenger.adapter
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.model.Conversation
+import com.craiovadata.android.messenger.util.AUTHOR
+import com.craiovadata.android.messenger.util.NAME
+import com.craiovadata.android.messenger.util.PHOTO_URL
+import com.craiovadata.android.messenger.util.TEXT
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_conversation.view.*
@@ -16,7 +18,7 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
         FirestoreAdapter<ConversationAdapter.ViewHolder>(query) {
 
     interface OnConversationSelectedListener {
-        fun onConversationSelected(conversation: Conversation)
+        fun onConversationSelected(conversation: HashMap<String, String?>)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -33,17 +35,17 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
 
         fun bind(documentSnapshot: DocumentSnapshot, listener: OnConversationSelectedListener?) {
 
-            val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
-            Log.d("TAG", "DocumentSnapshot data: " + conversation)
+            val conversation: HashMap<String, String?> = documentSnapshot.data as HashMap<String, String?>?
+                    ?: return
 //            val resources = itemView.resources
 
             Glide.with(itemView.roomItemImage.context)
-                    .load(conversation.palPhotoUrl)
+                    .load(conversation[PHOTO_URL])
                     .into(itemView.roomItemImage)
 
-            itemView.roomName.text = conversation.palName
-            itemView.author.text = conversation.lastMessageAuthor
-            itemView.lastMsg.text = conversation.lastMessage
+            itemView.roomName.text = conversation[NAME]
+            itemView.author.text = conversation[AUTHOR]
+            itemView.lastMsg.text = conversation[TEXT]
 
             // Click listener
             itemView.setOnClickListener {

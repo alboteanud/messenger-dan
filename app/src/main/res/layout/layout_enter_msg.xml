@@ -8,18 +8,6 @@
     android:padding="8dp"
     android:background="@color/grayE0">
 
-<ImageView
-    android:id="@+id/recordButton"
-    android:layout_width="@dimen/record_button_dimen"
-    android:layout_height="@dimen/record_button_dimen"
-    android:layout_marginEnd="8dp"
-    android:padding="4dp"
-    android:background="?attr/selectableItemBackground"
-    android:clickable="true"
-    android:focusable="true"
-    app:srcCompat="@drawable/ic_microphone"
-    android:contentDescription="record" />
-
 <EditText
     android:id="@+id/msgFormText"
     android:layout_width="0dp"

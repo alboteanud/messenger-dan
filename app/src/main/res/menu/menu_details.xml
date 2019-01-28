@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/menu_block"
         android:title="Block"
-        app:showAsAction="never"
-        />
+        android:visible="false"
+        app:showAsAction="never" />
 
-
+    <item
+        android:id="@+id/menu_unblock"
+        android:title="Unblock"
+        android:visible="false"
+        app:showAsAction="never" />
 
 </menu>

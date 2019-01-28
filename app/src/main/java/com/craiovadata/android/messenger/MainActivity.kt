@@ -11,7 +11,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import com.craiovadata.android.messenger.adapter.ConversationAdapter
-import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
 import com.craiovadata.android.messenger.util.Util.removeRegistration
@@ -29,9 +28,8 @@ import kotlinx.android.synthetic.main.conversation_list.*
 class MainActivity : AppCompatActivity(),
         ConversationAdapter.OnConversationSelectedListener {
 
-    private lateinit var conversationAdapter: ConversationAdapter
+    private lateinit var adapter: ConversationAdapter
     private lateinit var viewModel: MainActivityViewModel
-    private lateinit var user: FirebaseUser
     private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,20 +46,16 @@ class MainActivity : AppCompatActivity(),
 
     public override fun onStart() {
         super.onStart()
-        val firebaseUser = FirebaseAuth.getInstance().currentUser
-        if (firebaseUser != null) {
-            user = firebaseUser
-            title = user.displayName
-            setListAdapter()
+        FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
+            title = firebaseUser.displayName
+            setListAdapter(firebaseUser)
+        } ?: if (!viewModel.isSigningIn) startSignIn()
 
-        } else {
-            if (!viewModel.isSigningIn) startSignIn()
-        }
     }
 
     public override fun onStop() {
         super.onStop()
-        if (::conversationAdapter.isInitialized) conversationAdapter.stopListening()
+        if (::adapter.isInitialized) adapter.stopListening()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -77,11 +71,14 @@ class MainActivity : AppCompatActivity(),
                 overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
             }
             R.id.menu_sign_out -> {
-                removeRegistration(this@MainActivity, user.uid)
-                AuthUI.getInstance().signOut(this)
-                startSignIn()
+                FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
+                    removeRegistration(this@MainActivity, firebaseUser.uid)
+                    AuthUI.getInstance().signOut(this)
+                    startSignIn()
 //                finish() not ok. On signIn goes home
-                recyclerConversations.adapter = null
+                    recyclerConversations.adapter = null
+                }
+
             }
             R.id.menu_test -> {
 
@@ -90,15 +87,15 @@ class MainActivity : AppCompatActivity(),
         return super.onOptionsItemSelected(item)
     }
 
-    private fun setListAdapter() {
+    private fun setListAdapter(firebaseUser: FirebaseUser) {
         if (recyclerConversations.adapter == null) {
-            val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
+            val ref = firestore.collection("$USERS/${firebaseUser.uid}/$CONVERSATIONS")
             val query = ref.orderBy(TIMESTAMP, Query.Direction.DESCENDING)
 
-            conversationAdapter = object : ConversationAdapter(query, this@MainActivity) {}
-            recyclerConversations.adapter = conversationAdapter
+            adapter = object : ConversationAdapter(query, this@MainActivity) {}
+            recyclerConversations.adapter = adapter
         }
-        conversationAdapter.startListening()
+        adapter.startListening()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -122,12 +119,12 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onConversationSelected(conversation: Conversation) {
+    override fun onConversationSelected(conversation: HashMap<String, String?>) {
         Log.d(TAG, "onConvSelected" + conversation)
         val intent = Intent(this, DetailsActivity::class.java)
-                .putExtra(KEY_USER_ID, conversation.palId)
-                .putExtra(KEY_USER_NAME, conversation.palName)
-                .putExtra(KEY_USER_PHOTO_URL, conversation.palPhotoUrl)
+                .putExtra(KEY_USER_ID, conversation[UID])
+                .putExtra(KEY_USER_NAME, conversation[NAME])
+                .putExtra(KEY_USER_PHOTO_URL, conversation[PHOTO_URL])
 
         startActivity(intent)
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
