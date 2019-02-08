@@ -112,9 +112,8 @@ class DetailsActivity : AppCompatActivity() {
         val file = Uri.fromFile(File(recordFileName))
         val ref = FirebaseStorage.getInstance().reference.child("sounds/users/$uid/$uidP/${file.lastPathSegment}")
         ref.putFile(file).addOnSuccessListener {
-            //            val meta = it.metadata
-//            val downloadUri = it.result
-//            Log.d(TAG, "uploaded succesfully at: " + downloadUri)
+            val meta = it.metadata
+            Log.d(TAG, "upload meta: ${meta.toString()}")
             ref.downloadUrl.addOnSuccessListener {
                 val downloadUri = it.toString()
                 Log.d(TAG, "upload success $downloadUri")
@@ -122,13 +121,6 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onSendTxtClicked() {
-        val txt = msgFormText.text
-        if (!txt.isBlank()) {
-            addMessage(txt.toString())
-            msgFormText.text = null
-        }
-    }
 
     // onBackPressed
     override fun finish() {
@@ -255,5 +247,13 @@ class DetailsActivity : AppCompatActivity() {
 
     }
 
+
+    private fun onSendTxtClicked() {
+        val txt = msgFormText.text
+        if (!txt.isBlank()) {
+            addMessage(txt.toString())
+            msgFormText.text = null
+        }
+    }
 
 }
