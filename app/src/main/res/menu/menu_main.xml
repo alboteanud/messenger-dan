@@ -1,19 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/menu_search"
-        android:title="Search"
         android:icon="@android:drawable/ic_menu_search"
-        app:showAsAction="always"
-        />
+        android:title="Search"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/menu_mute_all"
+        android:title="Mute all sounds"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/menu_sign_out"
         android:title="@string/sign_out" />
-<item
+
+    <item
         android:id="@+id/menu_test"
-        android:title="Test" />
+        android:title="Test"
+        android:visible="false"
+        app:showAsAction="never"/>
 
 </menu>

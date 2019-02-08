@@ -3,11 +3,11 @@ package com.craiovadata.android.messenger
 import android.Manifest
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.media.MediaRecorder.*
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -16,61 +16,90 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.craiovadata.android.messenger.adapter.MessageAdapter
 import com.craiovadata.android.messenger.util.*
-import com.google.android.gms.tasks.Continuation
-import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.UploadTask
 import kotlinx.android.synthetic.main.activity_details.*
-import kotlinx.android.synthetic.main.layout_enter_msg.*
+import kotlinx.android.synthetic.main.msg_editor.*
 import kotlinx.android.synthetic.main.message_list.*
 import java.io.File
 import java.io.IOException
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.recyclerview.widget.RecyclerView
+
 
 private const val TAG = "DetailsActivity"
 private const val REQUEST_RECORD_AUDIO_PERMISSION = 200
 
 class DetailsActivity : AppCompatActivity() {
 
-    var adapter : MessageAdapter? = null
+    private var adapter: MessageAdapter? = null
+    private var uidP: String? = null
+    private lateinit var conversationRef: DocumentReference
     private lateinit var firestore: FirebaseFirestore
-    private lateinit var uidP: String
-    private lateinit var convRef: DocumentReference
+    private var dataObserver: RecyclerView.AdapterDataObserver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
         setSupportActionBar(toolbar_msgs)
+        initFirestore()
+        getIntentExtras()
+        attachRecyclerViewAdapter()
+        sendButton.setOnClickListener { onSendTxtClicked() }
+        recordButton.setOnClickListener { startRecording() }
 
-        uidP = intent.extras?.getString(KEY_USER_ID) ?: return
-        title = intent.extras?.getString(KEY_USER_NAME)
+    }
 
+    private fun getIntentExtras() {
+        intent.extras?.let {
+            if (it.containsKey(KEY_USER_ID)) {
+                uidP = it.getString(KEY_USER_ID)
+            }
+            if (it.containsKey(KEY_USER_NAME)) {
+                title = it.getString(KEY_USER_NAME)
+            }
+        }
+    }
+
+    private fun initFirestore() {
         firestore = FirebaseFirestore.getInstance()
-        setButtonsListeners()
-
+        val settings = FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build()
+        firestore.firestoreSettings = settings
     }
 
     public override fun onStart() {
         super.onStart()
-        initList()
+        adapter?.startListening()
+        adapter?.registerAdapterDataObserver(dataObserver!!)
     }
 
-    private fun initList() {
-        FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
-            convRef = firestore.document("$USERS/${firebaseUser.uid}/$CONVERSATIONS/$uidP")
+    public override fun onStop() {
+        super.onStop()
+        adapter?.unregisterAdapterDataObserver(dataObserver!!)
+        adapter?.stopListening()
+    }
 
-            val query = convRef.collection(MESSAGES).orderBy(TIMESTAMP, Query.Direction.DESCENDING).limit(30L)
-            adapter =  MessageAdapter(query)
-            recyclerMsgs.adapter = adapter
+    private fun attachRecyclerViewAdapter() {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        conversationRef = firestore
+                .document("$USERS/${user.uid}/$CONVERSATIONS/$uidP")
 
-            adapter?.startListening()
+        val query = conversationRef.collection(MESSAGES)
+                .orderBy(MSG_TIMESTAMP, Query.Direction.DESCENDING)
+                .limit(30L)
+        adapter = MessageAdapter(query)
+        recyclerMsgs.adapter = adapter
+
+        dataObserver = object : RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                recyclerMsgs.smoothScrollToPosition(0)
+            }
         }
-    }
 
-    private fun setButtonsListeners() {
-        sendButton.setOnClickListener { onSendClicked() }
-        recordButton.setOnClickListener { startRecording() }
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -78,43 +107,27 @@ class DetailsActivity : AppCompatActivity() {
         return true
     }
 
-    private fun startUpload(recFile: String) {
-        val file = Uri.fromFile(File(recFile))
-        val ref = FirebaseStorage.getInstance().reference.child("sounds/${file.lastPathSegment}")
-        val uploadTask = ref.putFile(file)
-
-        uploadTask.continueWithTask(Continuation<UploadTask.TaskSnapshot, Task<Uri>> { task ->
-            if (!task.isSuccessful) {
-                task.exception?.let {
-                    throw it
-                }
-            }
-            return@Continuation ref.downloadUrl
-        }).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val downloadUri = task.result
-                Log.d(TAG, "uploaded succesfully at: " + downloadUri)
-                if (downloadUri != null) {
-                    val txt = downloadUri.toString()
-                    addMessage(txt)
-                }
-            } else {
-                // Handle failures
+    private fun startUpload(recordFileName: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val file = Uri.fromFile(File(recordFileName))
+        val ref = FirebaseStorage.getInstance().reference.child("sounds/users/$uid/$uidP/${file.lastPathSegment}")
+        ref.putFile(file).addOnSuccessListener {
+            //            val meta = it.metadata
+//            val downloadUri = it.result
+//            Log.d(TAG, "uploaded succesfully at: " + downloadUri)
+            ref.downloadUrl.addOnSuccessListener {
+                val downloadUri = it.toString()
+                Log.d(TAG, "upload success $downloadUri")
             }
         }
     }
 
-    private fun onSendClicked() {
+    private fun onSendTxtClicked() {
         val txt = msgFormText.text
         if (!txt.isBlank()) {
             addMessage(txt.toString())
             msgFormText.text = null
         }
-    }
-
-    public override fun onStop() {
-        super.onStop()
-        adapter?.stopListening()
     }
 
     // onBackPressed
@@ -136,42 +149,27 @@ class DetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun startPlaying(recFile: String) {
-        MediaPlayer().apply {
-            try {
-                setDataSource(recFile)
-                prepare()
-                start()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
     private fun startRecording() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
-            return
-        }
-        recordButton.setColorFilter(getColor(R.color.colorRed))
-        recordButton.isEnabled = false
+        if (!hasRecordPermission()) return
+
+        recordButton.setColorFilter(getColor(android.R.color.black))
         val recFile = "${externalCacheDir.absolutePath}/msg_record.3gp"
         MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
             setOutputFile(recFile)
             setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-            setMaxDuration(3600)
+            setMaxDuration(2000)
             setOnInfoListener { mr, what, extra ->
                 Log.d(TAG, "recorder what $what")
                 when (what) {
                     MEDIA_RECORDER_INFO_MAX_DURATION_REACHED,
                     MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED,
+                    MEDIA_ERROR_SERVER_DIED,
                     MEDIA_RECORDER_ERROR_UNKNOWN -> {
                         delete(this)
                         recordButton.clearColorFilter()
-                        recordButton.isEnabled = true
-                        startPlaying(recFile)
+                        startUpload(recFile)
                     }
                 }
             }
@@ -179,30 +177,39 @@ class DetailsActivity : AppCompatActivity() {
                 prepare()
             } catch (e: IOException) {
                 Log.e(TAG, "prepare() failed")
+            } catch (e: IllegalStateException) {
+                Log.e(TAG, "prepare() failed")
             }
+
             start()
         }
     }
 
+    private fun hasRecordPermission(): Boolean {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
+            return false
+        }
+        return true
+    }
+
     private fun delete(recorder: MediaRecorder) {
-            try {
-                recorder.stop()
-            } catch (e: IllegalStateException) {
-                e.printStackTrace()
-            }
-            recorder.release()
+        try {
+            recorder.stop()
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+        }
+        recorder.release()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_details, menu)
-
-        convRef.collection("block").document(uidP).get()
-                .addOnSuccessListener { task ->
-                    if (task.exists()) {
-                        menu.findItem(R.id.menu_unblock).isVisible = true
-                    } else {
-                        menu.findItem(R.id.menu_block).isVisible = true
-                    }
+        conversationRef.collection("settings").document("blocked").get()
+                .addOnSuccessListener { document ->
+                    val item = menu.findItem(R.id.menu_block)
+                    if (document.exists()) item.title = getString(R.string.menu_unblock_usr_label)
+                    else item.title = getString(R.string.menu_block_usr_label)
                 }
 
         return super.onCreateOptionsMenu(menu)
@@ -211,36 +218,42 @@ class DetailsActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_block -> {
-                val data = HashMap<String, Any>()
-                convRef.collection("block").document(uidP).set(data)
-                invalidateOptionsMenu()
-            }
-            R.id.menu_unblock -> {
-                convRef.collection("block").document(uidP).delete()
-                invalidateOptionsMenu()
+                val ref = conversationRef.collection("settings").document("blocked")
+                if (item.title == getString(R.string.menu_block_usr_label)) {
+                    val data = HashMap<String, Any>()
+                    ref.set(data)
+                } else if (item.title == getString(R.string.menu_unblock_usr_label)) {
+                    ref.delete()
+                }
+                Handler().postDelayed({ invalidateOptionsMenu() }, 500)
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
     private fun addMessage(msgText: String) {
-        FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
+        val currentUser = FirebaseAuth.getInstance().currentUser ?: return
 
-            val batch = firestore.batch()
+        val batch = firestore.batch()
+        val now = System.currentTimeMillis().toString()
 
-            val msg = HashMap<String, Any?>()
-            msg[TEXT] = msgText
-            msg[AUTHOR] = firebaseUser.displayName ?: firebaseUser.email
-            msg[TIMESTAMP] = System.currentTimeMillis().toString()
+        val data = HashMap<String, Any?>()
+        data[MSG_TEXT] = msgText
+        data[MSG_AUTHOR] = currentUser.displayName ?: currentUser.email
+        data[MSG_TIMESTAMP] = now
+        data[TIMESTAMP_MODIF] = now
 
-            batch.set(convRef, msg, SetOptions.merge())
+        // update conversation
+        batch.set(conversationRef, data, SetOptions.merge())
 
-            msg[UID] = firebaseUser.uid
-            msg[PHOTO_URL] = firebaseUser.photoUrl.toString()
+        // add more stuff to msg - to update messages
+        data[UID] = currentUser.uid
+        data[PHOTO_URL] = currentUser.photoUrl.toString()
 
-            batch.set(convRef.collection(MESSAGES).document(), msg)
-            batch.commit()
-        }
+        batch.set(conversationRef.collection(MESSAGES).document(), data)
+        batch.commit()
+
     }
+
 
 }

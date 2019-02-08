@@ -4,14 +4,14 @@
 
     <item
         android:id="@+id/menu_block"
-        android:title="Block"
-        android:visible="false"
+        android:title="@string/menu_block_usr_label"
+        android:visible="true"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/menu_unblock"
-        android:title="Unblock"
-        android:visible="false"
+        android:id="@+id/menu_mute"
+        android:title="Mute"
+        android:visible="true"
         app:showAsAction="never" />
 
 </menu>

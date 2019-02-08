@@ -7,9 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.GlideApp
 import com.craiovadata.android.messenger.util.PHOTO_URL
-import com.craiovadata.android.messenger.util.TEXT
-import com.craiovadata.android.messenger.util.UID
-import com.google.firebase.auth.FirebaseUser
+import com.craiovadata.android.messenger.util.MSG_TEXT
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_message.view.*
@@ -32,7 +30,7 @@ open class MessageAdapter(query: Query) : FirestoreAdapter<MessageAdapter.ViewHo
         fun bind(snapshot: DocumentSnapshot) {
             val msg = snapshot.data  ?: return
 
-            val txtToShow = msg[TEXT].toString()
+            val txtToShow = msg[MSG_TEXT].toString()
             itemView.messageItemText.text = txtToShow
 
 //            if (snapshot.timestamp != null) itemView.ratingItemDate.text = FORMAT.format(snapshot.timestamp)
@@ -50,3 +48,7 @@ open class MessageAdapter(query: Query) : FirestoreAdapter<MessageAdapter.ViewHo
         }
     }
 }
+
+
+
+

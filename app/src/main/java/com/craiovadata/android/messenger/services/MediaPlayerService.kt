@@ -18,9 +18,7 @@ class MediaPlayerService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
 
-        val action: String = intent.action
-
-        when (action) {
+        when (intent.action) {
             ACTION_PLAY -> {
                 mMediaPlayer = MediaPlayer()
                 mMediaPlayer?.apply {
@@ -28,7 +26,7 @@ class MediaPlayerService : Service() {
                     setDataSource(s)
                     setOnPreparedListener { start() }
                     setOnCompletionListener { release() }
-                    prepareAsync() // prepare async to not block main thread
+                    prepareAsync()
 
                 }
 

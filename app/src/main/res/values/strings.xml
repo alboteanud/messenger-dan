@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>
-    <string name="app_name">Messenger</string>
+    <string name="app_name">Ciocârlia</string>
 
     <string name="sign_out">Sign Out</string>
 
     <string name="divider_bullet">•</string>
-    <string name="cancel">Cancel</string>
-    <string name="message_no_results">Oops, couldn\'t find any results\nthat matched your filter</string>
-    <string name="message_no_reviews">Be the first to leave a review!</string>
     <string name="hint_message">Write a message&#8230;</string>
-    <string name="submit">Submit</string>
-    <string name="add_message">Send message</string>
 
     <string name="title_sign_in_error">Sign In Error</string>
     <string name="message_no_network">No network connection.</string>
@@ -19,8 +14,10 @@
     <string name="option_retry">Retry</string>
     <string name="option_exit">Exit</string>
     <string name="default_notification_channel_id">chanel_1</string>
-    <string name="fcm_message">my content Title</string>
-    <string name="title_activity_record">RecordActivity</string>
+    <string name="mute_all_menu_label">Mute sounds</string>
+    <string name="unmute_all_menu_label">Unmute sounds</string>
+    <string name="menu_unblock_usr_label">Unblock</string>
+    <string name="menu_block_usr_label">Block</string>
 
 
 </resources>

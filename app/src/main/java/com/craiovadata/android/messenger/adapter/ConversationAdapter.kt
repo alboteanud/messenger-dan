@@ -6,10 +6,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.util.AUTHOR
+import com.craiovadata.android.messenger.util.MSG_AUTHOR
 import com.craiovadata.android.messenger.util.NAME
 import com.craiovadata.android.messenger.util.PHOTO_URL
-import com.craiovadata.android.messenger.util.TEXT
+import com.craiovadata.android.messenger.util.MSG_TEXT
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.item_conversation.view.*
@@ -44,8 +44,8 @@ open class ConversationAdapter(query: Query, private val listener: OnConversatio
                     .into(itemView.roomItemImage)
 
             itemView.roomName.text = conversation[NAME]
-            itemView.author.text = conversation[AUTHOR]
-            itemView.lastMsg.text = conversation[TEXT]
+            itemView.author.text = conversation[MSG_AUTHOR]
+            itemView.lastMsg.text = conversation[MSG_TEXT]
 
             // Click listener
             itemView.setOnClickListener {

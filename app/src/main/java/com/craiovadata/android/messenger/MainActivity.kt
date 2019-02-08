@@ -1,8 +1,10 @@
 package com.craiovadata.android.messenger
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -13,6 +15,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.craiovadata.android.messenger.adapter.ConversationAdapter
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
+import com.craiovadata.android.messenger.util.Util.getRegistrationAndSendToServer
 import com.craiovadata.android.messenger.util.Util.removeRegistration
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
@@ -21,6 +24,7 @@ import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.conversation_list.*
@@ -28,7 +32,7 @@ import kotlinx.android.synthetic.main.conversation_list.*
 class MainActivity : AppCompatActivity(),
         ConversationAdapter.OnConversationSelectedListener {
 
-    private lateinit var adapter: ConversationAdapter
+    private var adapter: ConversationAdapter? = null
     private lateinit var viewModel: MainActivityViewModel
     private lateinit var firestore: FirebaseFirestore
 
@@ -38,28 +42,39 @@ class MainActivity : AppCompatActivity(),
         setSupportActionBar(toolbarMain)
 
         firestore = FirebaseFirestore.getInstance()
+        val settings = FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build()
+        firestore.firestoreSettings = settings
+
         checkPlayServices(this)
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-
-
     }
 
     public override fun onStart() {
         super.onStart()
         FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
             title = firebaseUser.displayName
-            setListAdapter(firebaseUser)
+            attachRecyclerViewAdapter(firebaseUser)
         } ?: if (!viewModel.isSigningIn) startSignIn()
 
     }
 
     public override fun onStop() {
         super.onStop()
-        if (::adapter.isInitialized) adapter.stopListening()
+        adapter?.stopListening()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+
+        val isMuteAll = getSharedPreferences("_", Context.MODE_PRIVATE).getBoolean("mute_all", false)
+
+        if (isMuteAll) menu.findItem(R.id.menu_mute_all).title = getString(R.string.unmute_all_menu_label)
+        else menu.findItem(R.id.menu_mute_all).title = getString(R.string.mute_all_menu_label)
+
+        if (BuildConfig.DEBUG) menu.findItem(R.id.menu_test).isVisible = true
+
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -71,31 +86,37 @@ class MainActivity : AppCompatActivity(),
                 overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
             }
             R.id.menu_sign_out -> {
-                FirebaseAuth.getInstance().currentUser?.let { firebaseUser ->
-                    removeRegistration(this@MainActivity, firebaseUser.uid)
-                    AuthUI.getInstance().signOut(this)
-                    startSignIn()
-//                finish() not ok. On signIn goes home
-                    recyclerConversations.adapter = null
-                }
 
+                removeRegistration()
+                AuthUI.getInstance().signOut(this)
+                startSignIn()
+//                finish() not ok. On signIn goes home
+                recyclerConversations.adapter = null
             }
             R.id.menu_test -> {
+
+            }
+            R.id.menu_mute_all -> {
+                val pref = getSharedPreferences("_", Context.MODE_PRIVATE)
+                var isMuteAll = pref.getBoolean("mute_all", false)
+                isMuteAll = !isMuteAll
+                pref.edit().putBoolean("mute_all", isMuteAll).apply()
+                Handler().postDelayed({ invalidateOptionsMenu() }, 500)
 
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun setListAdapter(firebaseUser: FirebaseUser) {
+    private fun attachRecyclerViewAdapter(firebaseUser: FirebaseUser) {
         if (recyclerConversations.adapter == null) {
             val ref = firestore.collection("$USERS/${firebaseUser.uid}/$CONVERSATIONS")
-            val query = ref.orderBy(TIMESTAMP, Query.Direction.DESCENDING)
+            val query = ref.orderBy(TIMESTAMP_MODIF, Query.Direction.DESCENDING)
 
-            adapter = object : ConversationAdapter(query, this@MainActivity) {}
+            adapter = ConversationAdapter(query, this@MainActivity)
             recyclerConversations.adapter = adapter
         }
-        adapter.startListening()
+        adapter?.startListening()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -105,7 +126,8 @@ class MainActivity : AppCompatActivity(),
             viewModel.isSigningIn = false
 
             if (resultCode == Activity.RESULT_OK) {
-//                writeNewUser(this@MainActivity, user)
+                getRegistrationAndSendToServer()
+
             } else {
                 if (response == null) {
                     // User pressed the back button.
@@ -134,7 +156,7 @@ class MainActivity : AppCompatActivity(),
         // Sign in with FirebaseUI
         val intent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
-                .setLogo(R.drawable.ic_person_black_24dp)
+                .setLogo(R.drawable.bird_logo)
                 .setTheme(R.style.AppTheme)
                 .setTosAndPrivacyPolicyUrls(
                         "https://example.com/terms.html",

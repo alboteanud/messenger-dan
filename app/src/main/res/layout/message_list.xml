@@ -5,9 +5,8 @@
     android:id="@+id/recyclerMsgs"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layoutManager="LinearLayoutManager"
+    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
     app:reverseLayout="true"
     tools:context=".DetailsActivity"
     tools:listitem="@layout/item_message"
-    android:layout_marginLeft="16dp"
-    android:layout_marginRight="16dp"/>
+    />
