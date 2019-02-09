@@ -20,6 +20,6 @@
         android:id="@+id/menu_test"
         android:title="Test"
         android:visible="false"
-        app:showAsAction="never"/>
+        app:showAsAction="always"/>
 
 </menu>

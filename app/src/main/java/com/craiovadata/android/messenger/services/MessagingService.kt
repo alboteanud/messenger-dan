@@ -21,6 +21,7 @@ import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.google.firebase.storage.FirebaseStorage
 
 
 class MessagingService : FirebaseMessagingService() {
@@ -38,11 +39,11 @@ class MessagingService : FirebaseMessagingService() {
 
         // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "Message from ${remoteMessage?.from}")
+//        Log.d(TAG, "Message from ${remoteMessage?.from}")
 
         // Check if message contains a data payload.
         remoteMessage?.data?.isNotEmpty()?.let {
-            Log.d(TAG, "Message data payload: " + remoteMessage.data)
+            //            Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
             if (/* Check if data needs to be processed by long running job */ false) {
                 // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
@@ -55,7 +56,7 @@ class MessagingService : FirebaseMessagingService() {
 
         // Check if message contains a notification payload.
         remoteMessage?.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
+            //            Log.d(TAG, "Message Notification Body: ${it.body}")
         }
 
         // Also if you intend on generating your own notifications as a result of a received FCM
@@ -89,8 +90,8 @@ class MessagingService : FirebaseMessagingService() {
         val isActive = ForegroundListener.isForeground()
 
         data[SOUND_URL]?.let { url ->
-            Log.d(TAG, " sound url: " + url)
-            startPlaying(url)
+            //            Log.d(TAG, " sound url: " + url)
+            startPlaying(data)
         }
 
         data[MSG_TEXT]?.let {
@@ -144,7 +145,7 @@ class MessagingService : FirebaseMessagingService() {
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
     }
 
-    private fun startPlaying(url: String) {
+    private fun startPlaying(data: MutableMap<String, String>) {
 
 //        val intent = Intent(this@MessagingService, MediaPlayerService::class.java)
 //        intent.action = ACTION_PLAY
@@ -156,17 +157,32 @@ class MessagingService : FirebaseMessagingService() {
 //        if (thisMsgID.equals(previousMsgId)) return
 //        getSharedPreferences("_", Context.MODE_PRIVATE).edit().putString("lastMsgID", thisMsgID).apply()
 
-        val isMuteAll = getSharedPreferences("_", Context.MODE_PRIVATE).getBoolean("mute_all", false)
+        var isMuteAll = getSharedPreferences("_", Context.MODE_PRIVATE).getBoolean("mute_all", false)
+        isMuteAll = true
         if (!isMuteAll)
             MediaPlayer().apply {
                 setAudioStreamType(AudioManager.STREAM_MUSIC)
                 setVolume(1.0f, 1.0f)
-                setDataSource(url)
+                setDataSource(data[SOUND_URL])
                 setOnCompletionListener { release() }
                 prepare() // might take long! (for buffering, etc)
                 start()
+
             }
 
+        val storageRef = FirebaseStorage.getInstance().reference
+//        val ref = storageRef.child("sounds/users/${data["uid"]}/${data["uidP"]}/msg_record.3gp")
+        val ref = storageRef.child("dir/btn_picture.png")
+        Log.d(TAG, " ref storage: " + ref.toString())
+
+        val ONE_MEGABYTE: Long = 1024 * 1024
+        storageRef.getBytes(ONE_MEGABYTE).addOnSuccessListener {
+            // Data for "images/island.jpg" is returned, use this as needed
+            Log.d(TAG, "storage obj downloaded ")
+        }.addOnFailureListener {
+            // Handle any errors
+            Log.d(TAG, "error - storage obj NOT downloaded ")
+        }
 
     }
 
@@ -175,3 +191,4 @@ class MessagingService : FirebaseMessagingService() {
     }
 
 }
+

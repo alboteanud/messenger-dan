@@ -27,6 +27,10 @@ import java.io.IOException
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.FirebaseFirestore
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.tasks.Continuation
+import com.google.android.gms.tasks.Task
+import com.google.firebase.storage.StorageMetadata
+import com.google.firebase.storage.UploadTask
 
 
 private const val TAG = "DetailsActivity"
@@ -108,19 +112,36 @@ class DetailsActivity : AppCompatActivity() {
     }
 
     private fun startUpload(recordFileName: String) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val file = Uri.fromFile(File(recordFileName))
-        val ref = FirebaseStorage.getInstance().reference.child("sounds/users/$uid/$uidP/${file.lastPathSegment}")
-        ref.putFile(file).addOnSuccessListener {
-            val meta = it.metadata
-            Log.d(TAG, "upload meta: ${meta.toString()}")
-            ref.downloadUrl.addOnSuccessListener {
-                val downloadUri = it.toString()
-                Log.d(TAG, "upload success $downloadUri")
-            }
-        }
-    }
+        val user = FirebaseAuth.getInstance().currentUser ?: return
 
+        val file = Uri.fromFile(File(recordFileName))
+        val storageRef = FirebaseStorage.getInstance().reference
+        val ref = storageRef.child("sounds/users/${user.uid}/$uidP/${file.lastPathSegment}")
+        val metadata = StorageMetadata.Builder()
+                .setContentType("audio/3gpp")
+                .setCustomMetadata("author", user.displayName)
+                .build()
+        val uploadTask = ref.putFile(file, metadata)
+
+//        val urlTask = uploadTask.continueWithTask(Continuation<UploadTask.TaskSnapshot, Task<Uri>> { task ->
+//            if (!task.isSuccessful) {
+//                task.exception?.let {
+////                    throw it
+//                }
+//            }
+//            return@Continuation ref.downloadUrl
+//        }).addOnCompleteListener { task ->
+//            if (task.isSuccessful) {
+//                val downloadUri = task.result
+//            } else {
+//                // Handle failures
+//                // ...
+//            }
+//        }
+
+
+
+    }
 
     // onBackPressed
     override fun finish() {
@@ -246,7 +267,6 @@ class DetailsActivity : AppCompatActivity() {
         batch.commit()
 
     }
-
 
     private fun onSendTxtClicked() {
         val txt = msgFormText.text
