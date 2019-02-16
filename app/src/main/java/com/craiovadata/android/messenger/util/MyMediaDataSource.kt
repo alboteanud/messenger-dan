@@ -5,11 +5,12 @@ import android.media.MediaDataSource
 class MyMediaDataSource(val data: ByteArray) : MediaDataSource() {
 
     override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int): Int {
-        // Clamp reads past the end of the source.
+
         if (position >= data.size) return -1 // -1 indicates EOF
 
-        var size2: Int = size
         val endPosition: Int = (position + size).toInt()
+
+        var size2: Int = size
         if (endPosition > data.size)
             size2 -= endPosition - data.size
 

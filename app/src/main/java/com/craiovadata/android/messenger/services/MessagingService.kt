@@ -10,15 +10,19 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.DetailsActivity
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.util.*
+import com.craiovadata.android.messenger.util.ForegroundListener.Companion.isForeground
+import com.craiovadata.android.messenger.util.Util.isMuteAll
 import com.craiovadata.android.messenger.util.Util.sendRegistrationToServer
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.firebase.storage.FirebaseStorage
@@ -43,7 +47,7 @@ class MessagingService : FirebaseMessagingService() {
 
         // Check if message contains a data payload.
         remoteMessage?.data?.isNotEmpty()?.let {
-            //            Log.d(TAG, "Message data payload: " + remoteMessage.data)
+            Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
             if (/* Check if data needs to be processed by long running job */ false) {
                 // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
@@ -56,7 +60,7 @@ class MessagingService : FirebaseMessagingService() {
 
         // Check if message contains a notification payload.
         remoteMessage?.notification?.let {
-            //            Log.d(TAG, "Message Notification Body: ${it.body}")
+            Log.d(TAG, "Message Notification Body: ${it.body}")
         }
 
         // Also if you intend on generating your own notifications as a result of a received FCM
@@ -87,15 +91,12 @@ class MessagingService : FirebaseMessagingService() {
 
     private fun handleNow(data: MutableMap<String, String>) {
 
-        val isActive = ForegroundListener.isForeground()
-
-        data[SOUND_URL]?.let { url ->
-            //            Log.d(TAG, " sound url: " + url)
+        data["fromUid"]?.let {
             startPlaying(data)
         }
 
         data[MSG_TEXT]?.let {
-            if (!isActive)
+            if (!isForeground())
                 sendNotification(data)
         }
 
@@ -146,43 +147,38 @@ class MessagingService : FirebaseMessagingService() {
     }
 
     private fun startPlaying(data: MutableMap<String, String>) {
+        if (isMuteAll(this)) return
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val fromUid = data["fromUid"]
+        val toUid = data["toUid"]
 
-//        val intent = Intent(this@MessagingService, MediaPlayerService::class.java)
-//        intent.action = ACTION_PLAY
-//        intent.putExtra(URL_EXTRA_PLAY, url)
-//        startService(intent)
+        if (toUid == currentUser?.uid) {
+            val storageRef = FirebaseStorage.getInstance().reference
+            val ref = storageRef.child("sounds/users/$fromUid/$toUid/sound.3gp")
+            Log.d(TAG, "service messaging startPlaying() ref: " + ref)
 
-//        val previousMsgId = getSharedPreferences("_", Context.MODE_PRIVATE).getString("lastMsgID", "")
-//        val thisMsgID = data["messageId"]
-//        if (thisMsgID.equals(previousMsgId)) return
-//        getSharedPreferences("_", Context.MODE_PRIVATE).edit().putString("lastMsgID", thisMsgID).apply()
+            val ONE_MEGABYTE: Long = 1024 * 1024
+            ref.getBytes(ONE_MEGABYTE).addOnSuccessListener {bytes ->
+                playSound(bytes)
 
-        var isMuteAll = getSharedPreferences("_", Context.MODE_PRIVATE).getBoolean("mute_all", false)
-        isMuteAll = true
-        if (!isMuteAll)
-            MediaPlayer().apply {
-                setAudioStreamType(AudioManager.STREAM_MUSIC)
-                setVolume(1.0f, 1.0f)
-                setDataSource(data[SOUND_URL])
-                setOnCompletionListener { release() }
-                prepare() // might take long! (for buffering, etc)
-                start()
-
+                val txt = String.format(getString(R.string.toast_txt_new_audio_received), data["author"])
+                Toast.makeText(this, txt, Toast.LENGTH_LONG).show()
             }
-
-        val storageRef = FirebaseStorage.getInstance().reference
-//        val ref = storageRef.child("sounds/users/${data["uid"]}/${data["uidP"]}/msg_record.3gp")
-        val ref = storageRef.child("dir/btn_picture.png")
-        Log.d(TAG, " ref storage: " + ref.toString())
-
-        val ONE_MEGABYTE: Long = 1024 * 1024
-        storageRef.getBytes(ONE_MEGABYTE).addOnSuccessListener {
-            // Data for "images/island.jpg" is returned, use this as needed
-            Log.d(TAG, "storage obj downloaded ")
-        }.addOnFailureListener {
-            // Handle any errors
-            Log.d(TAG, "error - storage obj NOT downloaded ")
         }
+
+    }
+
+    private fun playSound(bytes: ByteArray) {
+
+        val mediaSource = MyMediaDataSource(bytes)
+        MediaPlayer().apply {
+            setAudioStreamType(AudioManager.STREAM_MUSIC)
+            setDataSource(mediaSource)
+            setOnCompletionListener { release() }
+            prepareAsync()
+            setOnPreparedListener { start() }
+        }
+
 
     }
 

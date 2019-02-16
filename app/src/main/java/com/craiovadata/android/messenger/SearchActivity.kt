@@ -23,9 +23,9 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
+        setSupportActionBar(toolbar)
 
         editText.requestFocus()
-        backBtn.setOnClickListener { onBackArrowClicked() }
 
         searchRef = FirebaseFirestore.getInstance().collection(USERS)
 
@@ -59,8 +59,9 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
     }
 
-    private fun onBackArrowClicked() {
+    override fun onSupportNavigateUp(): Boolean {
         onBackPressed()
+        return true
     }
 
     override fun onUserSelected(userToSearch: UserToSearch) {
@@ -76,7 +77,7 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
     // onBackPressed
     override fun finish() {
         super.finish()
-        overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right)
+        overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
 
 

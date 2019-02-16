@@ -2,4 +2,13 @@
 <resources>
 
     <string name="app_name">Ciocârlia</string>
+    <string name="toast_txt_new_audio_received" translatable="true">Mesaj audio de la \n%s</string>
+    <string name="mute_sound">Mute sound</string>
+    <string name="search_hint">name or email</string>
+    <string name="menu_label_mute_all_sounds">Mute all sounds</string>
+    <string name="menu_label_search">Search</string>
+    <string name="menu_label_chat_room">Chat room</string>
+    <string name="activity_people_label">People</string>
+    <string name="menu_label_show_me">Show me</string>
+    <string name="menu_label_hide_me">Hide me</string>
 </resources>

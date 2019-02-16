@@ -5,21 +5,15 @@ import android.content.Context
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import com.craiovadata.android.messenger.MainActivity
-import com.craiovadata.android.messenger.model.User
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.tasks.OnCompleteListener
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FieldValue.serverTimestamp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.messaging.FirebaseMessagingService
-import com.google.firestore.v1beta1.DocumentTransform
-import java.util.HashMap
+import java.util.*
 
 
 object Util {
@@ -105,6 +99,10 @@ object Util {
                     val token = task.result?.token
                     sendRegistrationToServer(token)
                 })
+    }
+
+    fun isMuteAll(context: Context):Boolean {
+        return context.getSharedPreferences("_", FirebaseMessagingService.MODE_PRIVATE).getBoolean(MUTE_ALL, false)
     }
 
 }

@@ -16,6 +16,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
+
         <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait"
@@ -28,6 +29,13 @@
         </activity>
         <activity
             android:name=".DetailsActivity"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"
+            />
+        <!--android:windowSoftInputMode="adjustResize|stateHidden"-->
+        <activity
+            android:name=".ChatRoomActivity"
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
@@ -47,8 +55,6 @@
             </intent-filter>
         </service>
 
-        <service android:name=".services.MediaPlayerService" />
-
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_message_white_24px" />
@@ -64,9 +70,7 @@
             android:name=".SearchActivity"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:windowSoftInputMode="stateAlwaysVisible"/>
-
-
+            android:windowSoftInputMode="stateAlwaysVisible" />
     </application>
 
 </manifest>

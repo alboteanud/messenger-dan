@@ -3,7 +3,7 @@
 <resources>
     <color name="colorPrimary">#1675d1</color>
     <color name="colorPrimaryDark">#004a9f</color>
-    <color name="colorAccent">#d15b16</color>
+    <color name="colorAccent">#ffffff</color>
     <!--<color name="colorAccent">#1675d1</color>-->
 
     <color name="greyPrimary">#DE000000</color>

@@ -89,6 +89,7 @@ abstract class FirestoreAdapter<VH : RecyclerView.ViewHolder>(private var query:
     private fun onDocumentAdded(change: DocumentChange) {
         snapshots.add(change.newIndex, change.document)
         notifyItemInserted(change.newIndex)
+
     }
 
     private fun onDocumentModified(change: DocumentChange) {

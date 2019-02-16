@@ -9,4 +9,5 @@
     app:reverseLayout="true"
     tools:context=".DetailsActivity"
     tools:listitem="@layout/item_message"
+    android:scrollbars="vertical"
     />
