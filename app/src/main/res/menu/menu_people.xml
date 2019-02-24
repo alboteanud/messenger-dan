@@ -5,12 +5,16 @@
     <item
         android:id="@+id/menu_show_me"
         android:title="@string/menu_label_show_me"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         android:visible="false"/>
 
     <item
         android:id="@+id/menu_hide_me"
         android:title="@string/menu_label_hide_me"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="never"/>
+ <item
+        android:id="@+id/menu_change_status"
+        android:title="@string/menu_label_change_status"
+        app:showAsAction="never"/>
 
 </menu>

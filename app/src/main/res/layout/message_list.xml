@@ -10,4 +10,5 @@
     tools:context=".DetailsActivity"
     tools:listitem="@layout/item_message"
     android:scrollbars="vertical"
+    tools:showIn="@layout/activity_details"
     />

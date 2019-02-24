@@ -1,6 +1,5 @@
 package com.craiovadata.android.messenger
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -15,8 +14,7 @@ import com.craiovadata.android.messenger.adapter.ConversationAdapter
 import com.craiovadata.android.messenger.model.Conversation
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.Util.checkPlayServices
-import com.craiovadata.android.messenger.util.Util.getRegistrationAndSendToServer
-import com.craiovadata.android.messenger.util.Util.removeRegistration
+import com.craiovadata.android.messenger.util.Util.sendRegistrationToServer
 import com.craiovadata.android.messenger.viewmodel.MainActivityViewModel
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.ErrorCodes
@@ -28,13 +26,14 @@ import com.google.firebase.firestore.Query
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.conversation_list.*
 
+
 class MainActivity : AppCompatActivity(),
         ConversationAdapter.OnConversationSelectedListener {
 
     private var adapter: ConversationAdapter? = null
     private lateinit var viewModel: MainActivityViewModel
     private lateinit var firestore: FirebaseFirestore
-    private var isMuteAllSounds: Boolean = false
+    private lateinit var menu: Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,19 +43,24 @@ class MainActivity : AppCompatActivity(),
         firestore = FirebaseFirestore.getInstance()
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
-        isMuteAllSounds = Util.isMuteAll(this)
-        setUpRecyclerView(false)
+
+        setUpRecyclerView()
     }
 
     public override fun onStart() {
         super.onStart()
-        FirebaseAuth.getInstance().currentUser?.let {
-            adapter?.startListening()
-            title = it.displayName
-        } ?: if (!viewModel.isSigningIn) {
+
+        // Start sign in if necessary
+        if (shouldStartSignIn()) {
             startSignIn()
-            finish()
+            return
         }
+
+        // Apply filters
+//        onFilter(mViewModel.getFilters())
+
+        // Start listening for Firestore updates
+        adapter?.startListening()
 
     }
 
@@ -67,13 +71,22 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
+        this.menu = menu
 
-        if (isMuteAllSounds) menu.findItem(R.id.menu_mute_all).title = getString(R.string.unmute_all_menu_label)
-        else menu.findItem(R.id.menu_mute_all).title = getString(R.string.mute_all_menu_label)
-
-        if (BuildConfig.DEBUG) menu.findItem(R.id.menu_test).isVisible = true
+        val isMuteAllSounds = Util.isMuteAll(this)
+        setMuteAllSounds(isMuteAllSounds)
 
         return super.onCreateOptionsMenu(menu)
+    }
+
+    private fun setMuteAllSounds(isMutedAllSounds: Boolean) {
+        val editor = getSharedPreferences("_", Context.MODE_PRIVATE).edit()
+        editor.putBoolean(MUTE_ALL, isMutedAllSounds).apply()
+
+        Handler().postDelayed({
+            menu.findItem(R.id.menu_mute_all).isVisible = !isMutedAllSounds
+            menu.findItem(R.id.menu_unmute_all).isVisible = isMutedAllSounds
+        }, 800)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -81,36 +94,33 @@ class MainActivity : AppCompatActivity(),
             R.id.menu_search -> {
                 val intent = Intent(this@MainActivity, SearchActivity::class.java)
                 startActivity(intent)
-                overridePendingTransition(com.craiovadata.android.messenger.R.anim.slide_in_from_right, com.craiovadata.android.messenger.R.anim.slide_out_to_left)
+                overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
             }
             R.id.menu_sign_out -> {
-
-                removeRegistration()
+//                removeTokenRegistration()
                 AuthUI.getInstance().signOut(this)
                 startSignIn()
 //                finish() not ok. On signIn goes home
                 recyclerConversations.adapter = null
             }
-            R.id.menu_test -> {
-
-
-            }
             R.id.menu_mute_all -> {
-                isMuteAllSounds = !isMuteAllSounds
-                getSharedPreferences("_", Context.MODE_PRIVATE).edit().putBoolean(MUTE_ALL, isMuteAllSounds).apply()
-                Handler().postDelayed({ invalidateOptionsMenu() }, 500)
-
+                setMuteAllSounds(true)
+            }
+            R.id.menu_unmute_all -> {
+                setMuteAllSounds(false)
             }
             R.id.menu_chat_room -> {
-                startActivity(Intent(this, ChatRoomActivity::class.java))
+                startActivity(Intent(this, AllPeopleActivity::class.java))
                 overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun setUpRecyclerView(startListening: Boolean) {
+    private fun setUpRecyclerView() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
+
+        title = user.displayName
 
         val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
         val query = ref.orderBy(MSG_TIMESTAMP, Query.Direction.DESCENDING)
@@ -120,8 +130,10 @@ class MainActivity : AppCompatActivity(),
                 .build()
 
         adapter = ConversationAdapter(options, this@MainActivity)
+        recyclerConversations.setHasFixedSize(true)
         recyclerConversations.adapter = adapter
-        if (startListening) adapter?.startListening()
+
+        adapter?.startListening()
     }
 
     override fun onConversationSelected(conversation: Conversation, adapterPosition: Int) {
@@ -135,39 +147,21 @@ class MainActivity : AppCompatActivity(),
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == RC_SIGN_IN) {
-            val response = IdpResponse.fromResultIntent(data)
-            viewModel.isSigningIn = false
-
-            if (resultCode == Activity.RESULT_OK) {
-                setUpRecyclerView(true)
-                getRegistrationAndSendToServer()
-
-            } else {
-                if (response == null) {
-                    // User pressed the back button.
-                    finish()
-                } else if (response.error != null && response.error!!.errorCode == ErrorCodes.NO_NETWORK) {
-                    showSignInErrorDialog(R.string.message_no_network)
-                } else {
-                    showSignInErrorDialog(R.string.message_unknown)
-                }
-            }
-        }
+    private fun shouldStartSignIn(): Boolean {
+        return viewModel.isSigningIn && FirebaseAuth.getInstance().currentUser == null
     }
 
+    // Sign in with FirebaseUI
     private fun startSignIn() {
-        // Sign in with FirebaseUI
+
         val intent = AuthUI.getInstance()
                 .createSignInIntentBuilder()
                 .setLogo(R.drawable.logo)
                 .setTheme(R.style.AppTheme)
                 .setTosAndPrivacyPolicyUrls(
-                        "https://example.com/terms.html",
+                        "https://sunshine-f15bf.firebaseapp.com/",
                         "https://sunshine-f15bf.firebaseapp.com/")
-                .setAvailableProviders(listOf(
+                .setAvailableProviders(arrayListOf(
                         AuthUI.IdpConfig.GoogleBuilder().build(),
                         AuthUI.IdpConfig.EmailBuilder().build()
                 ))
@@ -179,14 +173,30 @@ class MainActivity : AppCompatActivity(),
         viewModel.isSigningIn = true
     }
 
-    private fun showSignInErrorDialog(@StringRes message: Int) {
-        val dialog = AlertDialog.Builder(this)
-                .setTitle(R.string.title_sign_in_error)
-                .setMessage(message)
-                .setCancelable(false)
-                .setPositiveButton(R.string.option_retry) { _, _ -> startSignIn() }
-                .setNegativeButton(R.string.option_exit) { _, _ -> finish() }.create()
-        dialog.show()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == RC_SIGN_IN) {
+            val response = IdpResponse.fromResultIntent(data)
+            viewModel.isSigningIn = false
+
+            if (resultCode == RESULT_OK) {
+                setUpRecyclerView()
+                sendRegistrationToServer()
+            } else if (shouldStartSignIn()) {
+                startSignIn();
+            } else if (response == null) {
+                // User pressed the back button.
+                if (!shouldStartSignIn())
+                    finish()
+            } else if (response.error != null
+                    && response.error!!.errorCode == ErrorCodes.NO_NETWORK) {
+                showSignInErrorDialog(R.string.message_no_network);
+            } else {
+                showSignInErrorDialog(R.string.message_unknown);
+            }
+
+        }
+
     }
 
     // onBackPressed
@@ -197,6 +207,16 @@ class MainActivity : AppCompatActivity(),
 
     companion object {
         val TAG = "MainActivity"
+    }
+
+    private fun showSignInErrorDialog(@StringRes message: Int) {
+        val dialog = AlertDialog.Builder(this)
+                .setTitle(com.craiovadata.android.messenger.R.string.title_sign_in_error)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton(com.craiovadata.android.messenger.R.string.option_retry) { _, _ -> startSignIn() }
+                .setNegativeButton(com.craiovadata.android.messenger.R.string.option_exit) { _, _ -> finish() }.create()
+        dialog.show()
     }
 
 }

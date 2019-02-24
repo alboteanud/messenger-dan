@@ -4,12 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.craiovadata.android.messenger.adapter.SearchAdapter
-import com.craiovadata.android.messenger.model.UserToSearch
+import com.craiovadata.android.messenger.model.Person
 import com.craiovadata.android.messenger.util.*
+import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_search.*
@@ -17,40 +16,43 @@ import kotlinx.android.synthetic.main.activity_search.*
 
 class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener, TextWatcher {
 
-    lateinit var searchRef: CollectionReference
-    lateinit var searchAdapter: SearchAdapter
+    private lateinit var collectionReference: CollectionReference
+    private var adapter: SearchAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
         setSupportActionBar(toolbar)
-
+        collectionReference = FirebaseFirestore.getInstance().collection(USERS)
         editText.requestFocus()
 
-        searchRef = FirebaseFirestore.getInstance().collection(USERS)
-
-        searchAdapter = object : SearchAdapter(null, this@SearchActivity) {
-            override fun onDataChanged() {
-                super.onDataChanged()
-                if (itemCount == 0) {
-                    recyclerSearchedUsers.visibility = View.GONE
-                } else {
-                    recyclerSearchedUsers.visibility = View.VISIBLE
-                }
-            }
-        }
-        recyclerSearchedUsers.layoutManager = LinearLayoutManager(this)
-        recyclerSearchedUsers.adapter = searchAdapter
-
         editText.addTextChangedListener(this@SearchActivity)
+//        recyclerSearchedUsers.setHasFixedSize(true)
     }
 
     override fun afterTextChanged(s: Editable?) {
         val str = s.toString()
+        adapter?.stopListening()
         if (str.length < 4) return
-        var query = searchRef.whereArrayContains(KEYWORDS, str)
-        query = query.limit(20L)
-        searchAdapter.setQuery(query)
+
+        setUpRecyclerView(str)
+    }
+
+
+
+    private fun setUpRecyclerView(str: String) {
+
+        val query = collectionReference.whereArrayContains(KEYWORDS, str)
+                .limit(10L)
+
+        val options = FirestoreRecyclerOptions.Builder<Person>()
+                .setQuery(query, Person::class.java)
+                .build()
+
+        adapter = SearchAdapter(options, this@SearchActivity)
+
+        recyclerSearchedUsers.adapter = adapter
+        adapter?.startListening()
     }
 
     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -64,11 +66,11 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         return true
     }
 
-    override fun onUserSelected(userToSearch: UserToSearch) {
+    override fun onUserSelected(person: Person) {
         val intent = Intent(this@SearchActivity, DetailsActivity::class.java)
-                .putExtra(KEY_USER_ID, userToSearch.uid)
-                .putExtra(KEY_USER_NAME, userToSearch.name)
-                .putExtra(KEY_USER_PHOTO_URL, userToSearch.photoUrl)
+                .putExtra(KEY_USER_ID, person.uid)
+                .putExtra(KEY_USER_NAME, person.name)
+                .putExtra(KEY_USER_PHOTO_URL, person.photoUrl)
 
         startActivity(intent)
         finish()
@@ -80,5 +82,9 @@ class SearchActivity : AppCompatActivity(), SearchAdapter.OnUserSelectedListener
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left)
     }
 
+    override fun onStop() {
+        super.onStop()
+        adapter?.stopListening()
+    }
 
 }

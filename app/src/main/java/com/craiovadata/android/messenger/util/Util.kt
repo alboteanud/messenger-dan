@@ -9,7 +9,6 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue.serverTimestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -49,7 +48,7 @@ object Util {
         }
     }
 
-    fun removeRegistration() {
+    fun removeTokenRegistration() {
 
         FirebaseAuth.getInstance().currentUser?.let { user ->
 
@@ -68,25 +67,27 @@ object Util {
                         }
                     })
         }
-
-
     }
 
 
     fun sendRegistrationToServer(token: String?) {
+        // Saving the Device Token to the datastore.
+
+        //from demo app
+//        firebase.firestore().collection('fcmTokens').doc(currentToken)
+//                .set({uid: firebase.auth().currentUser.uid});
 
         FirebaseAuth.getInstance().currentUser?.let { user ->
             val ref = FirebaseFirestore.getInstance().document(
                     "$USERS/${user.uid}/$TOKENS/$token")
 
-            val hashMap = HashMap<String, Any>()
-            hashMap["updated"] = serverTimestamp()
+            val hashMap = HashMap<String, String>()
             hashMap["uid"] = user.uid
             ref.set(hashMap)
         }
     }
 
-    fun getRegistrationAndSendToServer() {
+    fun sendRegistrationToServer() {
 
         FirebaseInstanceId.getInstance().instanceId
                 .addOnCompleteListener(OnCompleteListener { task ->

@@ -5,27 +5,22 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
-import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.DetailsActivity
-import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.util.*
 import com.craiovadata.android.messenger.util.ForegroundListener.Companion.isForeground
-import com.craiovadata.android.messenger.util.Util.isMuteAll
 import com.craiovadata.android.messenger.util.Util.sendRegistrationToServer
 import com.firebase.jobdispatcher.FirebaseJobDispatcher
 import com.firebase.jobdispatcher.GooglePlayDriver
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.google.firebase.storage.FirebaseStorage
 
 
 class MessagingService : FirebaseMessagingService() {
@@ -49,12 +44,24 @@ class MessagingService : FirebaseMessagingService() {
         remoteMessage?.data?.isNotEmpty()?.let {
             Log.d(TAG, "Message data payload: " + remoteMessage.data)
 
-            if (/* Check if data needs to be processed by long running job */ false) {
-                // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
-                scheduleJob()
-            } else {
-                // Handle message within 10 seconds
-                handleNow(remoteMessage.data)
+            val data = remoteMessage.data
+            FirebaseAuth.getInstance().currentUser?.let { currentUser ->
+                if (currentUser.uid == data["destinationUid"]) {
+                    val msgId = data["msgId"]
+                    val lastMsgId = getSharedPreferences("_", Context.MODE_PRIVATE).getString("lastMsgId", null)
+                    if (msgId == lastMsgId) return
+
+                    if (/* Check if data needs to be processed by long running job */ data["text"] == "🗣️") {
+                        // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
+                        scheduleJobPlaySound(data)
+                    } else {
+                        // Handle message within 10 seconds
+                        handleNow(data)
+                    }
+
+                    getSharedPreferences("_", Context.MODE_PRIVATE).edit().putString("lastMsgId", msgId).apply()
+
+                }
             }
         }
 
@@ -80,36 +87,35 @@ class MessagingService : FirebaseMessagingService() {
     /**
      * Schedule a job using FirebaseJobDispatcher.
      */
-    private fun scheduleJob() {
+    private fun scheduleJobPlaySound(data: MutableMap<String, String>) {
+
+        val bundle = Bundle()
+        for (entry in data.entries)
+            bundle.putString(entry.key, entry.value)
+
         val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(this))
         val myJob = dispatcher.newJobBuilder()
-                .setService(MyJobService::class.java)
-                .setTag("my-job-tag")
+                .setService(MessagingJobService::class.java)
+                .setTag("my-play-job-tag")
+                .setExtras(bundle)
                 .build()
         dispatcher.schedule(myJob)
     }
 
     private fun handleNow(data: MutableMap<String, String>) {
 
-        data["fromUid"]?.let {
-            startPlaying(data)
-        }
-
-        data[MSG_TEXT]?.let {
-            if (!isForeground())
-                sendNotification(data)
-        }
-
+        if (!isForeground())
+            sendNotification(data)
 
     }
 
     private fun sendNotification(data: MutableMap<String, String>) {
         val intent = Intent(this, DetailsActivity::class.java)
 //        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.putExtra(KEY_USER_ID, data[UID_P])
+        intent.putExtra(KEY_USER_ID, data[UID])
         intent.putExtra(KEY_USER_NAME, data[MSG_AUTHOR])
 
-        val pendingIntent: PendingIntent? = TaskStackBuilder.create(this)
+        val pendingIntentOpenActivity: PendingIntent? = TaskStackBuilder.create(this)
                 // add all of DetailsActivity's parents to the stack,
                 .addNextIntentWithParentStack(intent)
                 .getPendingIntent(0, PendingIntent.FLAG_ONE_SHOT)
@@ -119,16 +125,18 @@ class MessagingService : FirebaseMessagingService() {
                 .load(data[PHOTO_URL])
                 .submit()
 
-        val channelId = getString(R.string.default_notification_channel_id)
+        val txtNotif = String.format(getString(com.craiovadata.android.messenger.R.string.notification_text), data[MSG_AUTHOR])
+        val channelId = getString(com.craiovadata.android.messenger.R.string.default_notification_channel_id)
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.drawable.ic_message_white_24px)
+                .setSmallIcon(com.craiovadata.android.messenger.R.drawable.ic_notif_bird)
                 .setLargeIcon(futureTarget.get())
-                .setContentTitle("Message from " + data[MSG_AUTHOR])
+                .setContentTitle(txtNotif)
                 .setContentText(data[MSG_TEXT])
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
-                .setContentIntent(pendingIntent)
+                .setContentIntent(pendingIntentOpenActivity)
+//                .addAction()
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -146,45 +154,11 @@ class MessagingService : FirebaseMessagingService() {
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build())
     }
 
-    private fun startPlaying(data: MutableMap<String, String>) {
-        if (isMuteAll(this)) return
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        val fromUid = data["fromUid"]
-        val toUid = data["toUid"]
-
-        if (toUid == currentUser?.uid) {
-            val storageRef = FirebaseStorage.getInstance().reference
-            val ref = storageRef.child("sounds/users/$fromUid/$toUid/sound.3gp")
-            Log.d(TAG, "service messaging startPlaying() ref: " + ref)
-
-            val ONE_MEGABYTE: Long = 1024 * 1024
-            ref.getBytes(ONE_MEGABYTE).addOnSuccessListener {bytes ->
-                playSound(bytes)
-
-                val txt = String.format(getString(R.string.toast_txt_new_audio_received), data["author"])
-                Toast.makeText(this, txt, Toast.LENGTH_LONG).show()
-            }
-        }
-
-    }
-
-    private fun playSound(bytes: ByteArray) {
-
-        val mediaSource = MyMediaDataSource(bytes)
-        MediaPlayer().apply {
-            setAudioStreamType(AudioManager.STREAM_MUSIC)
-            setDataSource(mediaSource)
-            setOnCompletionListener { release() }
-            prepareAsync()
-            setOnPreparedListener { start() }
-        }
-
-
-    }
 
     companion object {
         val TAG = "MessagingService"
     }
 
 }
+
 

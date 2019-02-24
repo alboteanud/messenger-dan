@@ -17,9 +17,9 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:background="#ccc"
-        android:scaleType="centerCrop"
-        android:src="@drawable/ic_person_black_24dp"
+        android:background="#aaa"
+        android:contentDescription="@string/description_person_icon"
+        tools:src="@drawable/ic_person_white_24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -32,12 +32,22 @@
         android:layout_alignTop="@+id/personPhoto"
         android:layout_marginStart="8dp"
         android:layout_marginTop="0dp"
-        android:layout_toRightOf="@+id/personPhoto"
+        android:layout_toEndOf="@+id/personPhoto"
         android:ellipsize="end"
         android:maxLines="1"
         app:layout_constraintStart_toEndOf="@+id/personPhoto"
         app:layout_constraintTop_toTopOf="@+id/personPhoto"
         tools:text="Anca Elena" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="@string/divider_bullet"
+        app:layout_constraintBottom_toBottomOf="@+id/personText1"
+        app:layout_constraintStart_toEndOf="@+id/personText1"
+        app:layout_constraintTop_toTopOf="@+id/personText1" />
 
 
     <TextView
@@ -50,7 +60,7 @@
         android:textColor="@color/greySecondary"
         app:layout_constraintStart_toStartOf="@+id/personName"
         app:layout_constraintTop_toBottomOf="@+id/personName"
-        tools:text="Dan Alboteanu" />
+        android:text="hello" />
 
 
     <TextView
@@ -64,10 +74,10 @@
         android:maxLines="1"
         android:scrollHorizontally="true"
         android:textColor="@color/greySecondary"
-        app:layout_constraintBottom_toBottomOf="@+id/personText1"
-        app:layout_constraintStart_toEndOf="@+id/personText1"
-        app:layout_constraintTop_toTopOf="@+id/personText1"
-        tools:text="hello there! " />
+        app:layout_constraintBottom_toBottomOf="@+id/textView"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toTopOf="@+id/textView"
+        android:text="active" />
 
 
 

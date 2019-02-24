@@ -14,6 +14,6 @@ const val RC_SIGN_IN = 9001
 const val PHOTO_URL = "photoUrl"
 const val MSG_TEXT = "text"
 const val MSG_AUTHOR = "author"
-const val UID_P = "uidP"
+const val UID = "uid"
 
 

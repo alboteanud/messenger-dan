@@ -13,9 +13,4 @@
         android:visible="false"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/menu_mute"
-        android:title="@string/mute_sound"
-        app:showAsAction="never" />
-
 </menu>

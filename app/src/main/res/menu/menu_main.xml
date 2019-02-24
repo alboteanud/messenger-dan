@@ -7,9 +7,16 @@
         android:icon="@drawable/ic_search"
         android:title="@string/menu_label_search"
         app:showAsAction="always" />
+
     <item
         android:id="@+id/menu_mute_all"
         android:title="@string/menu_label_mute_all_sounds"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_unmute_all"
+        android:title="@string/menu_label_unmute_all_sounds"
+        android:visible="false"
         app:showAsAction="never" />
 
     <item
@@ -17,15 +24,9 @@
         android:title="@string/sign_out" />
 
     <item
-        android:id="@+id/menu_test"
-        android:title="Test"
-        android:visible="false"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/menu_chat_room"
         android:icon="@drawable/ic_people"
-        android:title="@string/menu_label_chat_room"
+        android:title="@string/activity_people_label"
         app:showAsAction="always" />
 
 </menu>

@@ -4,9 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.R
 import com.craiovadata.android.messenger.model.Conversation
+import com.craiovadata.android.messenger.model.GlideApp
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import kotlinx.android.synthetic.main.item_conversation.view.*
@@ -26,7 +26,7 @@ open class ConversationAdapter(options: FirestoreRecyclerOptions<Conversation>, 
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, conversation: Conversation) {
-        val conversation = snapshots[position]
+//        val conversation = snapshots[position]
         holder.bind(conversation, listener)
     }
 
@@ -34,23 +34,22 @@ open class ConversationAdapter(options: FirestoreRecyclerOptions<Conversation>, 
 
         fun bind(conversation: Conversation, listener: OnConversationSelectedListener?) {
 
-//            val conversation = documentSnapshot.toObject(Conversation::class.java) ?: return
-
-            Glide.with(itemView.personPhoto.context)
+            GlideApp.with(itemView.personPhoto.context)
                     .load(conversation.photoUrlP)
+                    .placeholder(R.drawable.ic_person_white_24dp)
                     .into(itemView.personPhoto)
 
             itemView.personName.text = conversation.nameP
             itemView.personText1.text = conversation.author
             itemView.personText2.text = conversation.text
 
-            // Click listener
             itemView.setOnClickListener {
 
                 if (adapterPosition != RecyclerView.NO_POSITION) {
                     listener?.onConversationSelected(conversation, adapterPosition)
                 }
             }
+
         }
     }
 

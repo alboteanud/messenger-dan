@@ -5,15 +5,15 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.ServerTimestamp
 
-
-//@IgnoreExtraProperties
 data class Message(
-        var uid: String? = null,
-        var author: String? = null,
-        var text: String? = null,
-        var photoUrl: String? = null,
-        @ServerTimestamp var timestamp: Timestamp? = null
+        var uid: String?,
+        var author: String?,
+        var text: String?,
+        var photoUrl: String?,
+        @ServerTimestamp var timestamp: Timestamp?
 ) {
+
+    constructor() : this(null, null, null, null, null)
 
     constructor(user: FirebaseUser, msgText: String) : this() {
         this.uid = user.uid

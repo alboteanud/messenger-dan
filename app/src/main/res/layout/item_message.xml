@@ -14,7 +14,9 @@
         android:id="@+id/messageItemImageView"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        tools:src="@drawable/ic_person_black_24dp" />
+        android:background="#aaa"
+        tools:src="@drawable/ic_person_white_24dp"
+        android:contentDescription="@string/description_person_icon"/>
 
     <TextView
         android:id="@+id/messageItemText"

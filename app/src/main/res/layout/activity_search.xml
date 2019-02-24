@@ -31,6 +31,7 @@
                 android:background="@null"
                 android:focusedByDefault="true"
                 android:hint="@string/search_hint"
+                android:textCursorDrawable="@drawable/white_cursor_color"
                 android:inputType="text"/>
 
         </androidx.appcompat.widget.Toolbar>
@@ -49,6 +50,7 @@
             android:clipToPadding="false"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/search_item"/>
 
     </FrameLayout>

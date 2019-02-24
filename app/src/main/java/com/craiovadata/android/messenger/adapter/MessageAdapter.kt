@@ -11,8 +11,6 @@ import com.craiovadata.android.messenger.model.Message
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import kotlinx.android.synthetic.main.item_message.view.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 open class MessageAdapter(options: FirestoreRecyclerOptions<Message>) :
         FirestoreRecyclerAdapter<Message, MessageAdapter.ViewHolder>(options) {
@@ -52,15 +50,14 @@ open class MessageAdapter(options: FirestoreRecyclerOptions<Message>) :
 
             GlideApp.with(itemView.context)
                     .load(message.photoUrl)
-                    .placeholder(R.drawable.ic_person_black_24dp)
+                    .placeholder(R.drawable.ic_person_white_24dp)
                     .into(itemView.messageItemImageView)
 
 
         }
 
         companion object {
-            private val FORMAT = SimpleDateFormat(
-                    "HH:mm", Locale.US)
+//            private val FORMAT = SimpleDateFormat("HH:mm", Locale.US)
         }
     }
 

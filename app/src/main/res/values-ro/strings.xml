@@ -1,14 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Ciocârlia</string>
-    <string name="toast_txt_new_audio_received" translatable="true">Mesaj audio de la \n%s</string>
-    <string name="mute_sound">Mute sound</string>
-    <string name="search_hint">name or email</string>
-    <string name="menu_label_mute_all_sounds">Mute all sounds</string>
-    <string name="menu_label_search">Search</string>
-    <string name="menu_label_chat_room">Chat room</string>
-    <string name="activity_people_label">People</string>
-    <string name="menu_label_show_me">Show me</string>
-    <string name="menu_label_hide_me">Hide me</string>
+    <string name="app_name">Ciocârlia messenger</string>
+    <string name="activity_people_label">Oameni</string>
+
+    <string name="sign_out">Deconectare</string>
+    <string name="toast_txt_new_audio_received">Mesaj audio de la \n%s</string>
+    <string name="notification_text">Mesaj de la %s</string>
+    <string name="search_hint">nume sau email</string>
+
+    <string name="menu_label_search">Caută</string>
+
+    <string name="menu_label_mute_all_sounds">Fără zgomot</string>
+    <string name="menu_label_unmute_all_sounds">Pornește sunetul </string>
+
+    <string name="menu_label_show_me">Arată-mă</string>
+    <string name="menu_label_hide_me">Ascunde-mă</string>
+
+    <string name="menu_block_usr_label">Blochează</string>
+    <string name="menu_unblock_usr_label">Deblochează</string>
+
+    <string name="hint_message">mesaj</string>
+    <string name="title_sign_in_error">Eroare de conectare.</string>
+    <string name="message_no_network">Conexiune la retea inexistentă.</string>
+    <string name="message_unknown">Eroare necunoscută.</string>
+    <string name="option_retry">Reincearcă</string>
+    <string name="option_exit">Ieșire</string>
+    <string name="description_action_send_msg">trimite mesajul</string>
+    <string name="sound_uploaded_msg">Mesajul audio a fost trimis</string>
+    <string name="play_sound_label">Ascultă</string>
+    <string name="description_person_icon">Person photo</string>
+    <string name="menu_label_change_status">My status</string>
+    <string name="dialogTitleEnterStatus">Your status</string>
+    <string name="statusHint">status...</string>
+
+
 </resources>

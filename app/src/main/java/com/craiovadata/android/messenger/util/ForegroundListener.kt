@@ -10,14 +10,14 @@ class ForegroundListener : LifecycleObserver {
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onStart() {
         Log.v("ProcessLog", "APP IS ON FOREGROUND")
-        Companion.active = true
+        active = true
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     fun onStop() {
         Log.v("ProcessLog", "APP IS IN BACKGROUND")
 
-        Companion.active = false
+        active = false
     }
 
 

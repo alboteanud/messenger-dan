@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.media.MediaActionSound
 import android.media.MediaActionSound.START_VIDEO_RECORDING
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.media.MediaRecorder.*
 import android.net.Uri
@@ -23,6 +24,7 @@ import com.craiovadata.android.messenger.util.*
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.android.gms.tasks.Continuation
 import com.google.android.gms.tasks.Task
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
 import com.google.firebase.storage.FirebaseStorage
@@ -37,13 +39,16 @@ import java.io.IOException
 
 class DetailsActivity : AppCompatActivity() {
 
-    private lateinit var adapter: MessageAdapter
+    private var adapter: MessageAdapter? = null
     private lateinit var uidP: String
     private lateinit var conversationRef: DocumentReference
     private lateinit var firestore: FirebaseFirestore
     private var iAmBlocked = false
     private var iAmBlockedListenerRegistration: ListenerRegistration? = null
     private lateinit var menu: Menu
+    private var recordFileName = ""
+    private var recorder: MediaRecorder? = null
+    private var player: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +59,7 @@ class DetailsActivity : AppCompatActivity() {
         setUpRecyclerView()
         sendButton.setOnClickListener { onSendTxtClicked() }
         recordButton.setOnClickListener { startRecording() }
-
+        recordFileName = "${externalCacheDir.absolutePath}/sound.3gp"
     }
 
     private fun monitorIamBlockedStatus() {
@@ -94,14 +99,27 @@ class DetailsActivity : AppCompatActivity() {
 
     public override fun onStart() {
         super.onStart()
-        adapter.startListening()
+        adapter?.startListening()
         monitorIamBlockedStatus()
     }
 
     public override fun onStop() {
         super.onStop()
-        adapter.stopListening()
+        adapter?.stopListening()
         iAmBlockedListenerRegistration?.remove()
+        stopPlaying()
+        stopRecording()
+    }
+
+    private fun stopRecording() {
+//        recorder?.release()
+//        recorder = null
+        recorder?.apply {
+            stop()
+            release()
+        }
+        recorder = null
+
     }
 
     private fun setUpRecyclerView() {
@@ -120,7 +138,7 @@ class DetailsActivity : AppCompatActivity() {
         adapter = MessageAdapter(options)
         recyclerMsgs.setHasFixedSize(true)
         recyclerMsgs.adapter = adapter
-        adapter.setOnItemAddedListener(object : MessageAdapter.OnItemAddedListener {
+        adapter?.setOnItemAddedListener(object : MessageAdapter.OnItemAddedListener {
             override fun onItemAdded() {
                 recyclerMsgs.smoothScrollToPosition(0)
             }
@@ -137,31 +155,41 @@ class DetailsActivity : AppCompatActivity() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
 
         val file = Uri.fromFile(File(recordFileName))
-        val storageRef = FirebaseStorage.getInstance().reference
-        val ref = storageRef.child("sounds/users/${user.uid}/${uidP}/${file.lastPathSegment}")
-        Log.d(TAG, "ref  " + ref)
+        val location = String.format(getString(R.string.firebase_storage_sound_location), user.uid, uidP)
+        val storageRef = FirebaseStorage.getInstance().reference.child(location)
+
+        Log.d(TAG, "storage ref  " + storageRef)
         val metadata = StorageMetadata.Builder()
                 .setContentType("audio/3gpp")
                 .setCustomMetadata("author", user.displayName ?: user.email)
-
+                .setCustomMetadata(PHOTO_URL, user.photoUrl.toString())
                 .build()
-        val uploadTask = ref.putFile(file, metadata)
+        val uploadTask = storageRef.putFile(file, metadata)
 
         val urlTask = uploadTask.continueWithTask(Continuation<UploadTask.TaskSnapshot, Task<Uri>> { task ->
             if (!task.isSuccessful) {
-                task.exception?.let { it.printStackTrace() }
+                task.exception?.printStackTrace()
             }
-            return@Continuation ref.downloadUrl
+            return@Continuation storageRef.downloadUrl
         }).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val downloadUri = task.result
                 Log.d(TAG, "sound upload success " + downloadUri)
+                showSnackbarUploadSuccess()
             } else {
                 // Handle failures
                 Log.e(TAG, "sound upload failed ")
             }
         }
 
+    }
+
+    private fun showSnackbarUploadSuccess() {
+        Snackbar.make(detailsCoordonatorLayout, R.string.sound_uploaded_msg, Snackbar.LENGTH_LONG)
+                .setAction(R.string.play_sound_label) {
+                    startPlaying()
+                }
+                .show()
     }
 
     // onBackPressed
@@ -172,11 +200,13 @@ class DetailsActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        val permissionToRecordAccepted = if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
-            grantResults[0] == PackageManager.PERMISSION_GRANTED
-        } else {
-            false
-        }
+        val permissionToRecordAccepted =
+                if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
+                    // If request is cancelled, the result arrays are empty.
+                    grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                } else {
+                    false
+                }
 
         if (!permissionToRecordAccepted) {
 //            finish()
@@ -185,14 +215,16 @@ class DetailsActivity : AppCompatActivity() {
 
     private fun startRecording() {
         if (!hasRecordPermission()) return
+        var duration = 4500
+        if(BuildConfig.DEBUG)
+            duration = 1500
 
-        val recFile = "${externalCacheDir.absolutePath}/sound.3gp"
-        MediaRecorder().apply {
+        recorder = MediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            setOutputFile(recFile)
+            setOutputFile(recordFileName)
             setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-            setMaxDuration(2000)
+            setMaxDuration(duration)
             setOnInfoListener { mr, what, extra ->
                 Log.d(TAG, "recorder what $what")
                 when (what) {
@@ -201,8 +233,8 @@ class DetailsActivity : AppCompatActivity() {
                     MEDIA_ERROR_SERVER_DIED,
                     MEDIA_RECORDER_ERROR_UNKNOWN -> {
                         resetFab()
-                        mr.release()
-                        startUpload(recFile)
+                        stopRecording()
+                        startUpload(recordFileName)
                     }
                 }
             }
@@ -211,8 +243,8 @@ class DetailsActivity : AppCompatActivity() {
 
                 recordButton.isEnabled = false
                 MediaActionSound().play(START_VIDEO_RECORDING)
-                recordButton.setColorFilter(getColor(R.color.greyPrimary))
-                Handler().postDelayed({ resetFab() }, 3000)
+                recordButton.setColorFilter(getColor(R.color.colorAccent))
+                Handler().postDelayed({ resetFab() }, (duration + 100).toLong())
             } catch (e: IOException) {
                 Log.e(TAG, "prepare() failed")
             } catch (e: IllegalStateException) {
@@ -220,6 +252,23 @@ class DetailsActivity : AppCompatActivity() {
             }
             start()
         }
+    }
+
+    private fun startPlaying() {
+        player = MediaPlayer().apply {
+            try {
+                setDataSource(recordFileName)
+                prepare()
+                start()
+            } catch (e: IOException) {
+                Log.e(TAG, "prepare() failed")
+            }
+        }
+    }
+
+    private fun stopPlaying() {
+        player?.release()
+        player = null
     }
 
     private fun resetFab() {
@@ -265,14 +314,14 @@ class DetailsActivity : AppCompatActivity() {
     private fun checkHeIsBlockedState() {
         conversationRef.get().addOnSuccessListener { document ->
             if (document != null) {
-                Log.d(ChatRoomActivity.TAG, "DocumentSnapshot data: " + document.data)
+                Log.d(AllPeopleActivity.TAG, "DocumentSnapshot data: " + document.data)
                 val userData = document.data
 
                 val iBlockedHim = userData?.get(BLOCKED_HIM)
                 if (iBlockedHim is Boolean) setHeIsBlockedUI(iBlockedHim)
 
             } else {
-                Log.d(ChatRoomActivity.TAG, "No such document")
+                Log.d(AllPeopleActivity.TAG, "No such document")
             }
         }
     }
@@ -285,15 +334,16 @@ class DetailsActivity : AppCompatActivity() {
     private fun addMessage(text: String) {
         val user = FirebaseAuth.getInstance().currentUser ?: return
 
-        val msg = Message(user, text)
+        val message = Message(user, text)
         val conversationUpdate = ConversationUpdate(user, text)
+        val msgId = conversationRef.collection(MESSAGES).document().id
 
         val batch = firestore.batch()
         batch.set(conversationRef, conversationUpdate, SetOptions.merge())
-        batch.set(conversationRef.collection(MESSAGES).document(), msg)
+        batch.set(conversationRef.collection(MESSAGES).document(msgId), message)
         if (!iAmBlocked) {
             val conversationRefP = firestore.document("$USERS/$uidP/$CONVERSATIONS/${user.uid}")
-            batch.set(conversationRefP.collection(MESSAGES).document(), msg)
+            batch.set(conversationRefP.collection(MESSAGES).document(msgId), message)
             batch.set(conversationRefP, conversationUpdate, SetOptions.merge())
         }
         batch.commit()
