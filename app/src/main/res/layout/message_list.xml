@@ -7,8 +7,9 @@
     android:layout_height="match_parent"
     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
     app:reverseLayout="true"
+    android:contentDescription="@string/label_description_msgs_list"
     tools:context=".DetailsActivity"
     tools:listitem="@layout/item_message"
     android:scrollbars="vertical"
-    tools:showIn="@layout/activity_details"
+    tools:showIn="@layout/activity_messages"
     />

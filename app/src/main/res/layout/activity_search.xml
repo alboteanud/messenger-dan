@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
+    android:background="@color/grayE0"
     android:fitsSystemWindows="true"
     tools:context=".SearchActivity">
 
@@ -47,6 +48,7 @@
             android:id="@+id/recyclerSearchedUsers"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:contentDescription="@string/description_search_results"
             android:clipToPadding="false"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"

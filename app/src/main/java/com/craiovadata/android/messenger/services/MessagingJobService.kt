@@ -5,8 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
-import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.util.Log
@@ -16,8 +14,8 @@ import androidx.core.app.TaskStackBuilder
 import com.bumptech.glide.Glide
 import com.craiovadata.android.messenger.DetailsActivity
 import com.craiovadata.android.messenger.R
-import com.craiovadata.android.messenger.services.PlayerIntentService.Companion.ACTION_BAZ
-import com.craiovadata.android.messenger.services.PlayerIntentService.Companion.EXTRA_PARAM1
+import com.craiovadata.android.messenger.services.PlayerIntentService.Companion.ACTION_PLAY
+import com.craiovadata.android.messenger.services.PlayerIntentService.Companion.EXTRA_PARAM_PATH
 import com.craiovadata.android.messenger.services.PlayerIntentService.Companion.EXTRA_PARAM2
 import com.craiovadata.android.messenger.util.*
 import com.firebase.jobdispatcher.JobParameters
@@ -46,7 +44,7 @@ class MessagingJobService : JobService() {
         val ref = storageRef.child(soundLocation)
 
         val localFile = File.createTempFile(destUid, ".3gp")
-        Log.d(TAG, "File path: " + localFile.getAbsolutePath())
+        Log.d(TAG, "File path: " + localFile.absolutePath)
 //        ref.getBytes(ONE_MEGABYTE).addOnSuccessListener { bytes -> playSound(bytes)     }
         ref.getFile(localFile).addOnSuccessListener {
             // Local temp file has been created
@@ -67,21 +65,6 @@ class MessagingJobService : JobService() {
         return true
     }
 
-    private fun playSound(path: String) {
-        if (Util.isMuteAll(this)) return
-//        val mediaSource = MyMediaDataSource(bytes)
-        MediaPlayer().apply {
-            setAudioStreamType(AudioManager.STREAM_MUSIC)
-            setDataSource(path)
-//            setDataSource(mediaSource)
-            setOnCompletionListener {
-                release()
-                Log.d(TAG, "sound play completed")
-            }
-            prepareAsync()
-            setOnPreparedListener { start() }
-        }
-    }
 
 //    private lateinit var futureTarget: FutureTarget<Bitmap>
 
@@ -104,8 +87,8 @@ class MessagingJobService : JobService() {
 
 
         val intentStartPlayer = Intent(this, PlayerIntentService::class.java)
-        intentStartPlayer.action = ACTION_BAZ
-        intentStartPlayer.putExtra(EXTRA_PARAM1, path)
+        intentStartPlayer.action = ACTION_PLAY
+        intentStartPlayer.putExtra(EXTRA_PARAM_PATH, path)
         intentStartPlayer.putExtra(EXTRA_PARAM2, "")
 
         val pendingIntentStartPlayer: PendingIntent? = PendingIntent.getService(this, 0, intentStartPlayer, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -155,7 +138,7 @@ class MessagingJobService : JobService() {
     }
 
     companion object {
-        val ONE_MEGABYTE: Long = 1024 * 1024
+//        val ONE_MEGABYTE: Long = 1024 * 1024
         private const val TAG = "MessagingJobService"
     }
 

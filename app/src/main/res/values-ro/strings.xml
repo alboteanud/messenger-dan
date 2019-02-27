@@ -12,7 +12,7 @@
     <string name="menu_label_search">Caută</string>
 
     <string name="menu_label_mute_all_sounds">Fără zgomot</string>
-    <string name="menu_label_unmute_all_sounds">Pornește sunetul </string>
+    <string name="menu_label_unmute_all_sounds">Pornește sunetul</string>
 
     <string name="menu_label_show_me">Arată-mă</string>
     <string name="menu_label_hide_me">Ascunde-mă</string>
@@ -20,7 +20,7 @@
     <string name="menu_block_usr_label">Blochează</string>
     <string name="menu_unblock_usr_label">Deblochează</string>
 
-    <string name="hint_message">mesaj</string>
+    <string name="hint_message">mesaj..</string>
     <string name="title_sign_in_error">Eroare de conectare.</string>
     <string name="message_no_network">Conexiune la retea inexistentă.</string>
     <string name="message_unknown">Eroare necunoscută.</string>
@@ -29,10 +29,14 @@
     <string name="description_action_send_msg">trimite mesajul</string>
     <string name="sound_uploaded_msg">Mesajul audio a fost trimis</string>
     <string name="play_sound_label">Ascultă</string>
-    <string name="description_person_icon">Person photo</string>
-    <string name="menu_label_change_status">My status</string>
-    <string name="dialogTitleEnterStatus">Your status</string>
-    <string name="statusHint">status...</string>
+    <string name="description_person_icon">Poza pentru %s</string>
+    <string name="menu_label_change_status">Mesaj de status</string>
+    <string name="dialogTitleEnterStatus">Status</string>
+    <string name="statusHint">scrie aici..</string>
+    <string name="label_description_msgs_list">lista de mesaje</string>
+    <string name="description_fab_record">Inregistrează sunetul</string>
+    <string name="description_edit_search_person">nume sau email pentru căutare</string>
+    <string name="description_search_results">rezultatele căutării</string>
 
-
+    <string name="message_no_reviews">Fii primul care invita un prieten!</string>
 </resources>

@@ -9,4 +9,8 @@
 
     <color name="grayE0">#E0E0E0</color>
 
+    <color name="greyPrimary">#DE000000</color>
+
+    <color name="greyDisabled">#61000000</color>
+
 </resources>

@@ -20,7 +20,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.android.synthetic.main.activity_details.*
+import kotlinx.android.synthetic.main.activity_messages.*
 import kotlinx.android.synthetic.main.people_list.*
 import java.util.*
 
@@ -32,7 +32,7 @@ class AllPeopleActivity : AppCompatActivity(), PeopleAdapter.OnItemSelectedListe
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_chat_room)
+        setContentView(R.layout.activity_people)
         setSupportActionBar(toolbar)
         firestore = FirebaseFirestore.getInstance()
         setUpRecyclerView()

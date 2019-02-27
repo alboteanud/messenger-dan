@@ -7,15 +7,17 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.util.Log
 import com.craiovadata.android.messenger.util.Util
+import com.google.common.collect.ComparisonChain.start
+import io.grpc.internal.SharedResourceHolder.release
 import java.util.concurrent.Executors
 
 // TODO: Rename actions, choose action names that describe tasks that this
 // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
 //private const val ACTION_FOO = "com.craiovadata.android.messenger.services.action.FOO"
-//private const val ACTION_BAZ = "com.craiovadata.android.messenger.services.action.BAZ"
+//private const val ACTION_PLAY = "com.craiovadata.android.messenger.services.action.BAZ"
 
 // TODO: Rename parameters
-//private const val EXTRA_PARAM1 = "com.craiovadata.android.messenger.services.extra.PARAM1"
+//private const val EXTRA_PARAM_PATH = "com.craiovadata.android.messenger.services.extra.PARAM1"
 //private const val EXTRA_PARAM2 = "com.craiovadata.android.messenger.services.extra.PARAM2"
 
 /**
@@ -29,12 +31,12 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
     override fun onHandleIntent(intent: Intent?) {
         when (intent?.action) {
             ACTION_FOO -> {
-                val param1 = intent.getStringExtra(EXTRA_PARAM1)
+                val param1 = intent.getStringExtra(EXTRA_PARAM_PATH)
                 val param2 = intent.getStringExtra(EXTRA_PARAM2)
-                handleActionFoo(param1, param2)
+                handleActionPlaySound(param1, param2)
             }
-            ACTION_BAZ -> {
-                val param1 = intent.getStringExtra(EXTRA_PARAM1)
+            ACTION_PLAY -> {
+                val param1 = intent.getStringExtra(EXTRA_PARAM_PATH)
                 val param2 = intent.getStringExtra(EXTRA_PARAM2)
                 handleActionBaz(param1, param2)
             }
@@ -45,7 +47,7 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
      * Handle action Foo in the provided background thread with the provided
      * parameters.
      */
-    private fun handleActionFoo(param1: String, param2: String) {
+    private fun handleActionPlaySound(param1: String, param2: String) {
         TODO("Handle action Foo")
     }
 
@@ -54,7 +56,6 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
      * parameters.
      */
     private fun handleActionBaz(param1: String, param2: String) {
-
 
         val executor = Executors.newSingleThreadExecutor()
         executor.execute {
@@ -67,8 +68,8 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
 
         private const val TAG = "PlayerIntentService"
         const val ACTION_FOO = "com.craiovadata.android.messenger.services.action.FOO"
-       const val ACTION_BAZ = "com.craiovadata.android.messenger.services.action.BAZ"
-        const val EXTRA_PARAM1 = "com.craiovadata.android.messenger.services.extra.PARAM1"
+       const val ACTION_PLAY = "com.craiovadata.android.messenger.services.action.BAZ"
+        const val EXTRA_PARAM_PATH = "com.craiovadata.android.messenger.services.extra.PARAM1"
         const val EXTRA_PARAM2 = "com.craiovadata.android.messenger.services.extra.PARAM2"
 
 
@@ -83,7 +84,7 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
         fun startActionFoo(context: Context, param1: String, param2: String) {
             val intent = Intent(context, PlayerIntentService::class.java).apply {
                 action = ACTION_FOO
-                putExtra(EXTRA_PARAM1, param1)
+                putExtra(EXTRA_PARAM_PATH, param1)
                 putExtra(EXTRA_PARAM2, param2)
             }
             context.startService(intent)
@@ -99,8 +100,8 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
         @JvmStatic
         fun startActionBaz(context: Context, param1: String, param2: String) {
             val intent = Intent(context, PlayerIntentService::class.java).apply {
-                action = ACTION_BAZ
-                putExtra(EXTRA_PARAM1, param1)
+                action = ACTION_PLAY
+                putExtra(EXTRA_PARAM_PATH, param1)
                 putExtra(EXTRA_PARAM2, param2)
             }
             context.startService(intent)
@@ -110,7 +111,7 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
     private fun playSound(path: String) {
         if (Util.isMuteAll(this)) return
 //        val mediaSource = MyMediaDataSource(bytes)
-        MediaPlayer().apply {
+        val mp = MediaPlayer().apply {
             setAudioStreamType(AudioManager.STREAM_MUSIC)
             setDataSource(path)
 //            setDataSource(mediaSource)
@@ -121,6 +122,7 @@ class PlayerIntentService : IntentService("PlayerIntentService") {
             prepareAsync()
             setOnPreparedListener { start() }
         }
+
     }
 
 

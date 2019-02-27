@@ -33,7 +33,7 @@
         android:layout_alignTop="@+id/personPhoto"
         android:layout_marginStart="8dp"
         android:layout_marginTop="0dp"
-        android:layout_toRightOf="@+id/personPhoto"
+        android:layout_toEndOf="@+id/personPhoto"
         android:ellipsize="end"
         android:maxLines="1"
         app:layout_constraintStart_toEndOf="@+id/personPhoto"

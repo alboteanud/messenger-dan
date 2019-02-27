@@ -54,4 +54,5 @@ open class ConversationAdapter(options: FirestoreRecyclerOptions<Conversation>, 
     }
 
 
+
 }

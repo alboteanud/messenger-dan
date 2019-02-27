@@ -41,9 +41,12 @@ open class PeopleAdapter(options: FirestoreRecyclerOptions<Person>, private val 
                     .placeholder(R.drawable.ic_person_white_24dp)
                     .into(itemView.personPhoto)
 
+            itemView.personPhoto.contentDescription =
+                   String.format(itemView.context.getString(R.string.description_person_icon), person.name)
+
             itemView.personName.text = person.name
-            person.timestamp?.let {
-                        itemView.personText1.text = FORMAT.format(it)
+            person.timestamp?.let {date ->
+                        itemView.personText1.text = FORMAT.format(date)
             }
             itemView.personText2.text = person.statusTxt
 

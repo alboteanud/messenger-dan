@@ -16,7 +16,7 @@
     <string name="menu_label_search">Search</string>
 
     <string name="sign_out">Sign Out</string>
-    <string name="hint_message">message</string>
+    <string name="hint_message">message..</string>
     <string name="title_sign_in_error">Sign In Error.</string>
     <string name="message_no_network">No network connection.</string>
     <string name="message_unknown">Unknown error.</string>
@@ -30,13 +30,19 @@
     <string name="divider_bullet" translatable="false">•</string>
     <string name="default_notification_channel_id" translatable="false">chanel_1</string>
     <string name="description_action_send_msg">send message</string>
-    <string name="sound_uploaded_msg">Sound was sent</string>
-    <string name="play_sound_label">Play</string>
-    <string name="description_person_icon">Person photo</string>
+    <string name="sound_uploaded_msg">The sound was sent</string>
+    <string name="play_sound_label">Listen</string>
+    <string name="description_person_icon">Photo of %s</string>
     <string name="firebase_storage_sound_location" translatable="false">sounds/users/%s/%s/sound.3gp</string>
-    <string name="menu_label_change_status">My status</string>
-    <string name="dialogTitleEnterStatus">Your status</string>
-    <string name="statusHint">text</string>
+    <string name="menu_label_change_status">My status message</string>
+    <string name="dialogTitleEnterStatus">My status message</string>
+    <string name="statusHint">enter text..</string>
+    <string name="label_description_msgs_list">list of messages</string>
+    <string name="description_fab_record">Record sound</string>
+    <string name="description_edit_search_person">name or email to search</string>
+    <string name="description_search_results">results of searching</string>
+
+    <string name="message_no_reviews">¡Sé el primero en invitar a un amigo!</string>
 
 
 </resources>

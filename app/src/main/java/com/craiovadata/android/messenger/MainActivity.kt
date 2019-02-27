@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -23,7 +24,7 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_conversations.*
 import kotlinx.android.synthetic.main.conversation_list.*
 
 
@@ -37,14 +38,14 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_conversations)
         setSupportActionBar(toolbarMain)
         checkPlayServices(this)
         firestore = FirebaseFirestore.getInstance()
 
         viewModel = ViewModelProviders.of(this).get(MainActivityViewModel::class.java)
 
-        setUpRecyclerView()
+
     }
 
     public override fun onStart() {
@@ -60,8 +61,8 @@ class MainActivity : AppCompatActivity(),
 //        onFilter(mViewModel.getFilters())
 
         // Start listening for Firestore updates
-        adapter?.startListening()
-
+//        adapter?.startListening()
+        setUpRecyclerView()
     }
 
     public override fun onStop() {
@@ -99,8 +100,9 @@ class MainActivity : AppCompatActivity(),
             R.id.menu_sign_out -> {
 //                removeTokenRegistration()
                 AuthUI.getInstance().signOut(this)
+                viewModel.isSigningIn = false
                 startSignIn()
-//                finish() not ok. On signIn goes home
+//                finish() // not ok. On signIn goes home
                 recyclerConversations.adapter = null
             }
             R.id.menu_mute_all -> {
@@ -118,22 +120,40 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun setUpRecyclerView() {
-        val user = FirebaseAuth.getInstance().currentUser ?: return
+        if (adapter== null){
+            val user = FirebaseAuth.getInstance().currentUser ?: return
 
-        title = user.displayName
+            title = user.displayName
 
-        val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
-        val query = ref.orderBy(MSG_TIMESTAMP, Query.Direction.DESCENDING)
+            val ref = firestore.collection("$USERS/${user.uid}/$CONVERSATIONS")
+            val query = ref.orderBy(MSG_TIMESTAMP, Query.Direction.DESCENDING)
 
-        val options = FirestoreRecyclerOptions.Builder<Conversation>()
-                .setQuery(query, Conversation::class.java)
-                .build()
+            val options = FirestoreRecyclerOptions.Builder<Conversation>()
+                    .setQuery(query, Conversation::class.java)
+                    .build()
 
-        adapter = ConversationAdapter(options, this@MainActivity)
-        recyclerConversations.setHasFixedSize(true)
-        recyclerConversations.adapter = adapter
+//            adapter = ConversationAdapter(options, this@MainActivity)
+
+        adapter = object : ConversationAdapter(options, this@MainActivity) {
+            override fun onDataChanged() {
+                super.onDataChanged()
+                if (getItemCount() == 0) {
+                    recyclerConversations.setVisibility(View.GONE);
+                    view_empty_list.setVisibility(View.VISIBLE);
+                } else {
+                    recyclerConversations.setVisibility(View.VISIBLE);
+                    view_empty_list.setVisibility(View.GONE);
+                }
+            }
+        }
+
+//            recyclerConversations.setHasFixedSize(true)
+            recyclerConversations.adapter = adapter
+        }
+
 
         adapter?.startListening()
+
     }
 
     override fun onConversationSelected(conversation: Conversation, adapterPosition: Int) {
@@ -148,7 +168,7 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun shouldStartSignIn(): Boolean {
-        return viewModel.isSigningIn && FirebaseAuth.getInstance().currentUser == null
+        return (!viewModel.isSigningIn && FirebaseAuth.getInstance().currentUser == null)
     }
 
     // Sign in with FirebaseUI
@@ -169,6 +189,9 @@ class MainActivity : AppCompatActivity(),
                 .setIsSmartLockEnabled(false)
                 .build()
 
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK )
+//        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+
         startActivityForResult(intent, RC_SIGN_IN)
         viewModel.isSigningIn = true
     }
@@ -182,17 +205,16 @@ class MainActivity : AppCompatActivity(),
             if (resultCode == RESULT_OK) {
                 setUpRecyclerView()
                 sendRegistrationToServer()
-            } else if (shouldStartSignIn()) {
-                startSignIn();
             } else if (response == null) {
                 // User pressed the back button.
-                if (!shouldStartSignIn())
-                    finish()
+                finish()
             } else if (response.error != null
                     && response.error!!.errorCode == ErrorCodes.NO_NETWORK) {
-                showSignInErrorDialog(R.string.message_no_network);
+                showSignInErrorDialog(R.string.message_no_network)
+            } else if (shouldStartSignIn()) {  // sub response == null
+                startSignIn()
             } else {
-                showSignInErrorDialog(R.string.message_unknown);
+                showSignInErrorDialog(R.string.message_unknown)
             }
 
         }
@@ -218,5 +240,6 @@ class MainActivity : AppCompatActivity(),
                 .setNegativeButton(com.craiovadata.android.messenger.R.string.option_exit) { _, _ -> finish() }.create()
         dialog.show()
     }
+
 
 }

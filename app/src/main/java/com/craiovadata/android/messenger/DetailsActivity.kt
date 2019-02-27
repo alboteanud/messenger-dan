@@ -30,7 +30,7 @@ import com.google.firebase.firestore.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageMetadata
 import com.google.firebase.storage.UploadTask
-import kotlinx.android.synthetic.main.activity_details.*
+import kotlinx.android.synthetic.main.activity_messages.*
 import kotlinx.android.synthetic.main.message_list.*
 import kotlinx.android.synthetic.main.msg_editor.*
 import java.io.File
@@ -52,7 +52,7 @@ class DetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_details)
+        setContentView(R.layout.activity_messages)
         setSupportActionBar(toolbar)
         firestore = FirebaseFirestore.getInstance()
         getIntentExtras()

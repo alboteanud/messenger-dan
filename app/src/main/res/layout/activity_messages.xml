@@ -51,6 +51,7 @@
         android:theme="@style/PrimaryActionButton"
         app:borderWidth="3dp"
         app:elevation="4dp"
-        app:srcCompat="@drawable/ic_mic_white" />
+        app:srcCompat="@drawable/ic_mic_white"
+        android:contentDescription="@string/description_fab_record"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
